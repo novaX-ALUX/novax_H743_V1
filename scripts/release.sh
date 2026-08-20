@@ -67,6 +67,14 @@ PURPOSE = {
     'betaflight':   'flash via Betaflight Configurator',
 }
 
+# waf target -> human label used in release asset names. Only applied when a
+# board ships more than one vehicle (see the loop below).
+VEHICLE_LABEL = {
+    'arducopter': 'Copter', 'arduplane': 'Plane', 'ardurover': 'Rover',
+    'ardusub': 'Sub', 'antennatracker': 'Tracker', 'blimp': 'Blimp',
+    'AP_Periph': 'Periph',
+}
+
 def get_token():
     for line in open('.env'):
         if line.startswith('GITHUB_ACCESS_TOKEN='):
@@ -123,27 +131,41 @@ for board in BOARDS:
 
     ap = os.path.join(bdir, 'ardupilot')
     if os.path.isdir(ap):
-        files  = os.listdir(ap)
-        apj    = next((f for f in files if f.endswith('.apj')), None)
-        withbl = next((f for f in files if f.endswith('_with_bl.hex')), None)
-        binf   = (apj[:-4] + '.bin') if apj else None
-        plan = [('apj', apj, prefix + '.apj'),
-                ('bin', binf, prefix + '.bin'),
-                ('_with_bl.hex', withbl, prefix + '_with_bl.hex')]
-        had = False
-        for key, fname, aname in plan:
-            if fname and os.path.isfile(os.path.join(ap, fname)):
-                assets.append((aname, os.path.join(ap, fname), key))
-                files_for_board.append((aname, PURPOSE[key]))
-                had = True
-        if had:
-            commit = '-'
-            man = os.path.join(ap, 'manifest.txt')
-            if os.path.isfile(man):
-                for l in open(man):
-                    if l.startswith('ap_commit='):
-                        commit = l.split('=', 1)[1].strip()
-            board_rows.append((board, 'ardupilot', commit))
+        files = sorted(os.listdir(ap))
+        # A board can ship SEVERAL vehicles off one board_id (AF-H7E: 6202 =
+        # Copter + Plane). Releasing next(...apj) picked whichever sorted first
+        # and published a single unlabelled asset -- the other vehicle silently
+        # never shipped, and nothing in the name said which one you downloaded.
+        # Publish every vehicle found; add a -<Vehicle> suffix ONLY when the board
+        # actually has more than one, so single-vehicle boards keep the exact
+        # asset names the parts-catalog already links to.
+        apjs = [f for f in files if f.endswith('.apj')]
+        vehicles = [(a[:-4], VEHICLE_LABEL.get(a[:-4], a[:-4])) for a in apjs]
+        multi_vehicle = len(vehicles) > 1
+        for vbin, vlabel in vehicles:
+            had = False   # per-vehicle: a row is added only if THIS vehicle shipped
+            sfx = ('-' + vlabel) if multi_vehicle else ''
+            plan = [('apj',          vbin + '.apj',          prefix + sfx + '.apj'),
+                    ('bin',          vbin + '.bin',          prefix + sfx + '.bin'),
+                    ('_with_bl.hex', vbin + '_with_bl.hex',  prefix + sfx + '_with_bl.hex')]
+            for key, fname, aname in plan:
+                if os.path.isfile(os.path.join(ap, fname)):
+                    assets.append((aname, os.path.join(ap, fname), key))
+                    files_for_board.append((aname, PURPOSE[key]))
+                    had = True
+            if had:
+                commit = '-'
+                # per-vehicle manifest (manifest_arducopter.txt); fall back to the
+                # legacy shared manifest.txt for release dirs built before the split.
+                for man in (os.path.join(ap, 'manifest_%s.txt' % vbin),
+                            os.path.join(ap, 'manifest.txt')):
+                    if os.path.isfile(man):
+                        for l in open(man):
+                            if l.startswith('ap_commit='):
+                                commit = l.split('=', 1)[1].strip()
+                        break
+                board_rows.append((board, 'ardupilot ' + vlabel if multi_vehicle
+                                          else 'ardupilot', commit))
 
     bf = os.path.join(bdir, 'betaflight')
     if os.path.isdir(bf):

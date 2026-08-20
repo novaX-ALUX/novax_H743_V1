@@ -96,17 +96,29 @@ if [[ "${VEHICLE}" == "AP_Periph" ]]; then
     fi
 fi
 
-MANIFEST_PATH="${RELEASE_DIR}/manifest.txt"
+# One manifest PER VEHICLE. A board that ships several vehicles off one board_id
+# (AF-H7E: 6202 = Copter + Plane) writes into the same release dir, so a single
+# manifest.txt was last-writer-wins: it claimed "vehicle=plane" while listing the
+# arducopter files sitting next to it. Each vehicle now owns its own manifest and
+# lists only its own artifacts; release.sh reads whichever ones are present.
+MANIFEST_PATH="${RELEASE_DIR}/manifest_${VEHICLE_BIN}.txt"
 {
     echo "board=${BOARD_NAME}"
     echo "vehicle=${VEHICLE}"
+    echo "vehicle_bin=${VEHICLE_BIN}"
+    if [[ -n "${VEHICLE_LABEL:-}" ]]; then echo "vehicle_label=${VEHICLE_LABEL}"; fi
     echo "source_tree=firmware/ardupilot"
     echo "board_config=boards/${BOARD_NAME}/ardupilot"
     echo "ap_commit=$(git -C "${AP_ROOT}" rev-parse --short HEAD 2>/dev/null || echo unknown)"
     if [[ -n "${NOVAX_VERSION:-}" ]]; then echo "novax_version=${NOVAX_VERSION}"; fi
     echo "generated_at=$(date -Iseconds)"
     echo "files:"
-    find "${RELEASE_DIR}" -maxdepth 1 -type f ! -name manifest.txt -printf '  %f\n' | sort
+    find "${RELEASE_DIR}" -maxdepth 1 -type f \
+         \( -name "${VEHICLE_BIN}.*" -o -name "${VEHICLE_BIN}_*" \
+            -o -name "${BOARD_NAME}_bl.*" \) -printf '  %f\n' | sort
 } > "${MANIFEST_PATH}"
+
+# The shared manifest.txt becomes a lie as soon as a second vehicle lands; drop it.
+rm -f "${RELEASE_DIR}/manifest.txt"
 
 echo "Packaged firmware in ${RELEASE_DIR}"

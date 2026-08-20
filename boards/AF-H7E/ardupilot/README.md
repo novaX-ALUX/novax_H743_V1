@@ -32,13 +32,19 @@ Build:
 
 ```bash
 scripts/build_ap.sh AF-H7E copter
+scripts/build_ap.sh AF-H7E plane
 ```
+
+Both vehicles share board id `6202`, so the image itself is the only thing that
+says which one you are running. The build stamps the vehicle into the GCS banner
+(`novaX Copter v1.3.0` / `novaX Plane v1.3.0`) and the release assets carry a
+`-Copter` / `-Plane` suffix.
 
 Flashing notes:
 
-- `arducopter_with_bl.hex` — **first flash** (bootloader + app) via STM32 ROM
+- `arducopter_with_bl.hex` / `arduplane_with_bl.hex` — **first flash** (bootloader + app) via STM32 ROM
   DFU (BOOT0) or ST-Link/SWD. Required to install the novaX `6202` bootloader.
-- `arducopter.apj` — OTA update once the `6202` bootloader is present.
+- `arducopter.apj` / `arduplane.apj` — OTA update once the `6202` bootloader is present.
 - A bootloader built for a different board id only accepts a matching `.apj`;
   use DFU/SWD (or a forced upload) to switch a board between firmwares.
 
