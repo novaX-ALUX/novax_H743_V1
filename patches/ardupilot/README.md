@@ -43,6 +43,17 @@ fresh checkout / `git submodule update` via `scripts/apply_ap_patches.sh`.
     disarmed and `AP_FlashStorage::write()` returns false instead of blocking when an erase is not
     allowed, so the stall cannot occur in flight — it breaks ground/pre-arm operation.
 
+- **0003-novax-m10-lna-mode.patch** — pins the u-blox **M10 internal LNA gain** per board.
+  The receiver default is not stable across module firmware: SPG 5.10
+  (UBX-21035062) documents `CFG-HW-RF_LNA_MODE` default `0 (NORMAL)`, SPG 5.20
+  (UBXDOC-304424225-20128) documents `1 (LOWGAIN)`, so an identical board can ship
+  with a different front-end gain. Adds the key to `ConfigKey` and a gated entry to
+  `config_M10[]`, selected by `AP_GPS_UBLOX_M10_LNA_MODE` (`0` NORMAL / `1` LOWGAIN /
+  `2` BYPASS). **Default `-1` sends nothing, i.e. upstream behaviour, so boards that
+  do not define it are untouched.** `AF-F4_nano_v2` sets `0` (bare module, no external
+  LNA). ArduPilot writes `config_M10` over VALSET `RAM|BBR`; per the interface
+  description the RAM layer is "effective immediately", so no GPS reset is required.
+
 ## Verified (hardware)
 - **AF-F4_T10_nano (STM32F405):** software-jump DFU — `param4=99` → `0483:df11` cleanly.
 - **AF-H7E (STM32H753), 2026-07:** BOOT_ADD0 cold-boot DFU entry + `flash_dfu.py`/WebUSB flash +

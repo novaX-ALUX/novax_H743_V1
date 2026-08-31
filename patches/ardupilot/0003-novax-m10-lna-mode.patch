@@ -1,0 +1,47 @@
+diff --git a/libraries/AP_GPS/AP_GPS_UBLOX.cpp b/libraries/AP_GPS/AP_GPS_UBLOX.cpp
+index ac89ca2ebe..1acbce3f38 100644
+--- a/libraries/AP_GPS/AP_GPS_UBLOX.cpp
++++ b/libraries/AP_GPS/AP_GPS_UBLOX.cpp
+@@ -243,7 +243,30 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart2[] {
+   we need to use B1C not B1 signal for Beidou on M10 to allow solid 5Hz,
+   and also disable Glonass and enable QZSS
+  */
++/*
++  Internal LNA gain mode for M10, pinned per-board.
++
++  The receiver default is NOT stable across M10 firmware releases: the SPG 5.10
++  interface description (UBX-21035062) lists CFG-HW-RF_LNA_MODE default 0
++  (NORMAL), while SPG 5.20 (UBXDOC-304424225-20128) lists 1 (LOWGAIN). A board
++  that carries a bare module with no external LNA in front therefore gets a
++  different front-end gain depending on which firmware the module shipped with.
++
++  Boards that want a fixed mode set AP_GPS_UBLOX_M10_LNA_MODE in hwdef:
++    0 = NORMAL  (internal LNA at full gain)
++    1 = LOWGAIN
++    2 = BYPASS  (use only with a sufficient external LNA)
++  Left at -1 the item is not sent at all, i.e. upstream behaviour is unchanged,
++  so boards that do not define it are untouched.
++ */
++#ifndef AP_GPS_UBLOX_M10_LNA_MODE
++#define AP_GPS_UBLOX_M10_LNA_MODE -1
++#endif
++
+ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_M10[] {
++#if AP_GPS_UBLOX_M10_LNA_MODE >= 0
++ { ConfigKey::CFG_HW_RF_LNA_MODE, AP_GPS_UBLOX_M10_LNA_MODE},
++#endif
+  { ConfigKey::CFG_SIGNAL_BDS_ENA, 1},
+  { ConfigKey::CFG_SIGNAL_BDS_B1_ENA, 0},
+  { ConfigKey::CFG_SIGNAL_BDS_B1C_ENA, 1},
+diff --git a/libraries/AP_GPS/AP_GPS_UBLOX.h b/libraries/AP_GPS/AP_GPS_UBLOX.h
+index 47d1ccbd3f..8b98d28a79 100644
+--- a/libraries/AP_GPS/AP_GPS_UBLOX.h
++++ b/libraries/AP_GPS/AP_GPS_UBLOX.h
+@@ -327,6 +327,7 @@ private:
+ 
+         // other keys
+         CFG_NAVSPG_DYNMODEL             = 0x20110021,
++        CFG_HW_RF_LNA_MODE              = 0x20a30057,
+ 
+     };
+ 
