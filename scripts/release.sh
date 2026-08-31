@@ -191,9 +191,13 @@ for board in BOARDS:
                     assets.append((aname, src, key))
                     files_for_board.append((aname, PURPOSE[key]))
                     had = True
-                    # the signed manifest rides along with the .apj (the artifact
-                    # the updaters actually flash over the air)
-                    if key == 'apj' and board in SIGNED_BOARDS:
+                    # Sign every artifact our updaters actually FLASH: the .apj
+                    # (serial/bootloader path) and the _with_bl.hex (DFU path).
+                    # The hex matters more, not less: it rewrites the BOOTLOADER
+                    # and the ST ROM DFU performs no on-device check at all, so a
+                    # bad image bricks the board into SWD-only recovery. The .bin
+                    # is not consumed by any of our tools and is left unsigned.
+                    if key in ('apj', '_with_bl.hex') and board in SIGNED_BOARDS:
                         mname, mpath = sign_asset(aname, src)
                         assets.append((mname, mpath, 'aff4t10'))
                         files_for_board.append((mname, PURPOSE['aff4t10']))
