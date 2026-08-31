@@ -63,7 +63,7 @@ novaX フライトコントローラーおよび DroneCAN ペリフェラル向�
 ### クローン
 
 ```bash
-git clone --recurse-submodules --shallow-submodules https://github.com/novaX-ALUX/fc.git
+git clone --recurse-submodules --shallow-submodules https://github.com/novaX-ALUX/fc-boards.git
 cd flight_controller
 ```
 
