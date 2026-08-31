@@ -54,7 +54,7 @@ cd "${ROOT_DIR}"
 TAG="${TAG}" BOARDS="${*}" DRY_RUN="${DRY_RUN:-}" python3 - <<'PYEOF'
 import json, os, shutil, subprocess, sys, tempfile, urllib.request, urllib.error
 
-REPO   = 'novaX-ALUX/flight_controller'
+REPO   = 'novaX-ALUX/fc'
 TAG    = os.environ['TAG']
 BOARDS = os.environ.get('BOARDS', '').split()
 DRY    = bool(os.environ.get('DRY_RUN'))

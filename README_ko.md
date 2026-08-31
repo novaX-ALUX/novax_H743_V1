@@ -63,7 +63,7 @@ novaX 비행 컨트롤러 및 DroneCAN 주변장치용 보드 정의, 빌드 스
 ### 클론
 
 ```bash
-git clone --recurse-submodules --shallow-submodules https://github.com/novaX-ALUX/flight_controller.git
+git clone --recurse-submodules --shallow-submodules https://github.com/novaX-ALUX/fc.git
 cd flight_controller
 ```
 

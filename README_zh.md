@@ -63,7 +63,7 @@ novaX 系列飞控与 DroneCAN 外设的板级定义、构建脚本和固件发�
 ### 克隆
 
 ```bash
-git clone --recurse-submodules --shallow-submodules https://github.com/novaX-ALUX/flight_controller.git
+git clone --recurse-submodules --shallow-submodules https://github.com/novaX-ALUX/fc.git
 cd flight_controller
 ```
 
