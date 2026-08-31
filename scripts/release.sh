@@ -52,7 +52,7 @@ fi
 
 cd "${ROOT_DIR}"
 TAG="${TAG}" BOARDS="${*}" DRY_RUN="${DRY_RUN:-}" python3 - <<'PYEOF'
-import json, os, sys, urllib.request, urllib.error
+import json, os, shutil, subprocess, sys, tempfile, urllib.request, urllib.error
 
 REPO   = 'novaX-ALUX/flight_controller'
 TAG    = os.environ['TAG']
@@ -65,7 +65,44 @@ PURPOSE = {
     'bin':          'app binary (OTA)',
     '_with_bl.hex': 'first flash via STLink/DFU (bootloader + app)',
     'betaflight':   'flash via Betaflight Configurator',
+    'aff4t10':      'Ed25519 release-signature manifest (checked before flashing)',
 }
+
+# Boards whose .apj ships with an Ed25519 release-signature manifest
+# (<asset>.aff4t10.json). The update tools verify it BEFORE flashing and refuse
+# an unsigned/tampered image, so publishing one of these boards WITHOUT the
+# manifest yields a release the CLI updater cannot flash at all -- signing is
+# therefore fail-closed here rather than best-effort.
+# Scope is deliberate: only AF-F4_nano_v2 is signed today.
+SIGNED_BOARDS = {'AF-F4_nano_v2'}
+# The signer + private key live in the sibling parts-catalog checkout (the key is
+# gitignored there and never travels with this repo). Override with AFF4T10_FWSIG.
+FWSIG = os.environ.get('AFF4T10_FWSIG') or os.path.normpath(
+    os.path.join('..', 'parts-catalog', 'tools', 'af_f4_t10_fwsig.py'))
+_sigtmp = None
+
+def sign_asset(aname, src):
+    """Sign src, return (manifest_asset_name, manifest_path). Exits on failure."""
+    global _sigtmp
+    if not os.path.isfile(FWSIG):
+        sys.exit('signing required for this board but the signer is missing: ' + FWSIG
+                 + chr(10) + '       set AFF4T10_FWSIG=/path/to/af_f4_t10_fwsig.py')
+    if _sigtmp is None:
+        _sigtmp = tempfile.mkdtemp(prefix='novax-fwsig-')
+    # copy under the RELEASE asset name so the manifest 'file' field is the
+    # name people actually download (verify_file does not check it, but the
+    # manifest is also read by humans as release back-data)
+    staged = os.path.join(_sigtmp, aname)
+    shutil.copy2(src, staged)
+    r = subprocess.run([sys.executable, FWSIG, 'sign', staged],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        sys.exit('signing FAILED for ' + aname + chr(10) + r.stdout + r.stderr)
+    man = staged + '.aff4t10.json'
+    if not os.path.isfile(man):
+        sys.exit('signer reported success but produced no manifest for ' + aname)
+    print('  signed %s' % aname)
+    return os.path.basename(man), man
 
 # waf target -> human label used in release asset names. Only applied when a
 # board ships more than one vehicle (see the loop below).
@@ -149,10 +186,17 @@ for board in BOARDS:
                     ('bin',          vbin + '.bin',          prefix + sfx + '.bin'),
                     ('_with_bl.hex', vbin + '_with_bl.hex',  prefix + sfx + '_with_bl.hex')]
             for key, fname, aname in plan:
-                if os.path.isfile(os.path.join(ap, fname)):
-                    assets.append((aname, os.path.join(ap, fname), key))
+                src = os.path.join(ap, fname)
+                if os.path.isfile(src):
+                    assets.append((aname, src, key))
                     files_for_board.append((aname, PURPOSE[key]))
                     had = True
+                    # the signed manifest rides along with the .apj (the artifact
+                    # the updaters actually flash over the air)
+                    if key == 'apj' and board in SIGNED_BOARDS:
+                        mname, mpath = sign_asset(aname, src)
+                        assets.append((mname, mpath, 'aff4t10'))
+                        files_for_board.append((mname, PURPOSE['aff4t10']))
             if had:
                 commit = '-'
                 # per-vehicle manifest (manifest_arducopter.txt); fall back to the
