@@ -41,8 +41,8 @@ Flash (this board has no USB DFU):
 | File | When |
 |------|------|
 | `AP-RTK_dual_with_bl.hex` | **First flash** — combined bootloader + app, one-shot via ST-Link / SWD (PA13/PA14), e.g. STM32CubeProgrammer |
-| `AP_Periph.apj` / `AP_Periph.bin` | Update over DroneCAN (Mission Planner SLCAN → Update firmware) once the bootloader is present |
-| `AP-RTK_dual_bl.bin` + `AP_Periph.bin` | Alternative two-step SWD flash: bootloader at `0x08000000`, app at `0x08010000` |
+| `AP-RTK_dual-v<ver>.apj` / `.bin` (packaged name; waf emits `AP_Periph.*`) | Update over DroneCAN (Mission Planner SLCAN → Update firmware) once the bootloader is present |
+| `AP-RTK_dual_bl.bin` + `AP-RTK_dual-v<ver>.bin` | Alternative two-step SWD flash: bootloader at `0x08000000`, app at `0x08010000` |
 
 End users only flash the prebuilt firmware — the X/Y compass fix and the node
 name are baked in; there are no parameters to set on the module.

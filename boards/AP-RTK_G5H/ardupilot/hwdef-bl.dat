@@ -1,0 +1,83 @@
+# hw definition file for processing by chibios_pins.py
+# Bootloader for AP-RTK G5H (novaX-ALUX).
+# Derived from the novaX AP-RTK dual bootloader (CUAV C-RTK2-HP lineage).
+# AP-RTK dual carrier with the mosaic-G5 P3H; board id 6206 (see hwdef.dat).
+
+# MCU class and specific type
+MCU STM32F4xx STM32F412Rx
+
+FLASH_RESERVE_START_KB 0
+# two sectors for bootloader, two for storage
+FLASH_BOOTLOADER_LOAD_KB 64
+
+# board ID for firmware load - MUST match the application hwdef (6206)
+APJ_BOARD_ID 6206
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+define CH_CFG_ST_FREQUENCY 1000000
+
+# assume 512k flash part
+FLASH_SIZE_KB 512
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# order of UARTs: USB first so uploader.py / Mission Planner can flash over
+# USB-C (schematic v3 routes the connector to the MCU).
+SERIAL_ORDER OTG1
+
+# USB
+PA11 USB_FS_DM OTG1
+PA12 USB_FS_DP OTG1
+
+# software DFU jump to the ST ROM bootloader (0x1FFF0000) when the app set the
+# boot_to_dfu flag (MAVLink param4=99 + magic). Same mechanism as the novaX F4 FCs.
+ENABLE_DFU_BOOT 1
+
+# use safety button to stay in bootloader
+PB3 STAY_IN_BOOTLOADER INPUT PULLDOWN
+define HAL_STAY_IN_BOOTLOADER_VALUE 1
+
+PB0 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 1
+
+# USART1
+PB6 USART1_TX USART1
+PB7 USART1_RX USART1
+
+# USART2
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define HAL_USE_SERIAL TRUE
+
+define STM32_SERIAL_USE_USART1 TRUE
+define STM32_SERIAL_USE_USART2 TRUE
+define STM32_SERIAL_USE_USART3 FALSE
+
+define HAL_NO_GPIO_IRQ
+define HAL_USE_EMPTY_IO TRUE
+
+# avoid timer and RCIN threads to save memory
+define HAL_NO_TIMER_THREAD
+
+define DMA_RESERVE_SIZE 0
+
+# enable CAN support
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+
+# make bl baudrate match debug baudrate for easier debugging
+define BOOTLOADER_BAUDRATE 57600
+
+# use a small bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 1000

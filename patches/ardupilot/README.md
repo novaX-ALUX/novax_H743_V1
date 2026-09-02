@@ -59,3 +59,9 @@ fresh checkout / `git submodule update` via `scripts/apply_ap_patches.sh`.
 - **AF-H7E (STM32H753), 2026-07:** BOOT_ADD0 cold-boot DFU entry + `flash_dfu.py`/WebUSB flash +
   bootloader self-heal auto-boot (no power cycle). Full round-trip verified on the bench.
 - **F7:** built with the F4/F7 jump path but **not hardware-verified** (no board on hand).
+
+- **0004-novax-f412-bootloader-otg-hs-guard.patch** — `Tools/AP_Bootloader/bl_protocol.cpp
+  jump_to_app()`: gate `rccResetOTG_HS()` on `RCC_AHB1RSTR_OTGHRST` as well. ChibiOS defines the
+  macro for every STM32F4, but the OTG_HS block only exists on F405/F407/F427-class parts;
+  STM32F412 (AP-RTK G5H, USB on OTG_FS) fails to compile the bootloader without this
+  (`'RCC_AHB1RSTR_OTGHRST' was not declared`). No effect on parts that have OTG_HS.

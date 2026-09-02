@@ -1,0 +1,20 @@
+board: AP-RTK_G5H
+display_name: AP-RTK G5H
+platform:
+  - ardupilot
+firmware_type: AP_Periph
+node_name: AP-RTK G5H
+mcu: STM32F412Rx
+package: LQFP-64
+bootloader_board_id: 6206
+source_tree: firmware/ardupilot
+board_config: boards/AP-RTK_G5H/ardupilot
+based_on: AP-RTK_dual (novaX) — receiver swapped UM982 -> Septentrio mosaic-G5 P3H
+sensors:
+  compass: RM3100 (I2C3 @ 0x20) — axis reversal inherited from AP-RTK dual, re-measure on this PCB
+  gnss: Septentrio mosaic-G5 P3H — single-module dual-antenna heading, SBF (GPS_TYPE 26)
+can:
+  can1: DroneCAN node
+function: RTK GNSS + dual-antenna heading + compass DroneCAN peripheral
+hardware: 41_Kicad/circuits/ap_rtk_g5h.py (SKiDL) -> 41_Kicad/kicad/ap_rtk_g5h/
+status: design — schematic drafted, PCB not started. Heading path verified in ArduPilot 4.6.3 source (see README).

@@ -1,0 +1,176 @@
+# =============================================================================
+# AP-RTK X20D - ArduPilot AP_Periph Hardware Definition (novaX-ALUX)
+# =============================================================================
+# DroneCAN RTK GNSS + dual-antenna heading + compass peripheral.
+#
+# Derived from the novaX AP-RTK dual board config (which is itself a CUAV
+# C-RTK2-HP derivative). The carrier board, MCU, compass, CAN and power tree
+# are reused unchanged; ONLY the GNSS receiver differs:
+#
+#     AP-RTK dual  : Unicore UM982      -> GPS_TYPE 25 (NMEA moving baseline)
+#     AP-RTK X20D  : u-blox ZED-X20D    -> UBX, single-module dual antenna
+#
+# !! WORK IN PROGRESS !!
+# ArduPilot has NO ZED-X20D driver yet. Upstream master declares the enum
+# value UBLOX_X20 (=0x84) but never assigns it, and there is no u-blox
+# dual-antenna GPS_TYPE at all. This file therefore builds a POSITION-ONLY
+# peripheral today; heading requires the driver work tracked in
+# boards/AP-RTK_X20D/PORTING.md. Read that before building or ordering PCBs.
+# =============================================================================
+
+# hw definition file for processing by chibios_pins.py
+
+# MCU class and specific type
+MCU STM32F4xx STM32F412Rx
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# bootloader starts firmware at 64k
+FLASH_RESERVE_START_KB 64
+
+# store parameters in pages 2 and 3
+STORAGE_FLASH_PAGE 2
+define HAL_STORAGE_SIZE 8192
+
+# board ID for firmware load.
+# NEW novaX id (62xx range, same series as the novaX flight controllers) rather
+# than AP-RTK dual's inherited CUAV id 1085. Reasons:
+#   - this is new hardware, so there is no installed base of 1085 bootloaders
+#     to preserve; the OTA-compatibility argument that justified 1085 on
+#     AP-RTK dual does not apply here.
+#   - AP-RTK dual and AP-RTK X20D share a connector and a carrier board but
+#     carry different GNSS receivers. A shared board id would let Mission
+#     Planner push the UM982 firmware onto an X20D board (and vice versa); it
+#     would boot and then silently fail to produce a fix.
+# 6205 verified free: unused upstream (Tools/AP_Bootloader/board_types.txt has
+# no 62xx entries) and unused across this repo.
+APJ_BOARD_ID 6205
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# DroneCAN node name shown in the Mission Planner DroneCAN device list.
+define CAN_APP_NODE_NAME "AP-RTK X20D"
+
+STM32_ST_USE_TIMER 5
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+define CH_CFG_ST_FREQUENCY 1000000
+
+# assume 512k flash part
+FLASH_SIZE_KB 512
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# order of UARTs
+SERIAL_ORDER USART1 EMPTY EMPTY USART2
+
+# a LED to flash
+PB0 LED OUTPUT LOW
+
+# USART1 for debug
+PB6 USART1_TX USART1 NODMA
+PB7 USART1_RX USART1 NODMA
+define DEFAULT_SERIAL0_BAUD 57600
+
+# USART2 for GNSS
+# TODO(hw): the ZED-X20D runs all-band at up to 25 Hz and carries more payload
+# than the UM982 did. Confirm the required baud (and whether DMA is needed on
+# this port) against the X20D integration manual before freezing the PCB.
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# one I2C bus
+PA8 I2C3_SCL I2C3
+PB4 I2C3_SDA I2C3
+
+I2C_ORDER I2C3
+
+# =============================================================================
+# Compass - RM3100 on I2C3 @ 0x20
+# =============================================================================
+# Inherited verbatim from AP-RTK dual, where the RM3100 Z (vertical) axis was
+# measured inverted on the PCB and corrected with the driver's own reversal
+# mask (bit 2 = 4). A single-axis sign flip is a reflection, not a rotation, so
+# no ROTATION_* can undo it -- which is why stock firmware read wrong there.
+#
+# !! VERIFY ON HARDWARE !! This carries over only because the carrier board is
+# reused. Re-run the AP-RTK dual check on the first X20D article: log raw
+# sensor X/Y/Z at four known headings (60 / 150 / 230 / 300 deg) and confirm Z
+# is still inverted. If the part placement changed, drop or adjust the mask.
+COMPASS RM3100 I2C:0:0x20 false ROTATION_NONE
+define AP_RM3100_REVERSAL_MASK 4
+
+# safety LED, active low
+PB5 SAFE_LED OUTPUT HIGH
+define SAFE_LED_ON 0
+
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
+define HAL_DISABLE_ADC_DRIVER TRUE
+
+define HAL_NO_GPIO_IRQ
+
+# avoid RCIN thread to save memory
+define HAL_USE_RTC FALSE
+
+define DMA_RESERVE_SIZE 0
+
+# enable CAN support
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+PB1 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(70)
+
+# sensor power enable
+PA12 VDD_SENSOR_EN OUTPUT HIGH
+
+# RTK reset
+PA4 RTK_RESET_N OUTPUT HIGH
+
+# PPS
+PA7 PPS INPUT PULLUP
+
+define HAL_DEVICE_THREAD_STACK 768
+
+# reserve space for embedded parameters (no separate defaults.parm)
+define AP_PARAM_MAX_EMBEDDED_PARAM 256
+
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+
+define HAL_PERIPH_ENABLE_GPS
+
+# Kept enabled: the most likely low-cost path to heading is to reuse the
+# existing UBX-NAV-RELPOSNED moving-baseline plumbing, since the ZED-X20D is
+# reported to emit RELPOSNED alongside its native UBX-NAV-DAHEADING message.
+# Confirm against the X20D interface description; if heading ends up going
+# through a new message + new GPS_TYPE instead, this can be turned off to
+# recover flash. See PORTING.md.
+define GPS_MOVING_BASELINE 1
+
+define HAL_PERIPH_ENABLE_MAG
+define HAL_COMPASS_MAX_SENSORS 1
+
+# =============================================================================
+# GNSS - u-blox ZED-X20D (UBX)
+# =============================================================================
+# Unlike AP-RTK dual there is no NMEA/Unicore path here: the X20D is a UBX
+# device, so the u-blox backend replaces the NMEA one.
+define AP_GPS_BACKEND_DEFAULT_ENABLED 0
+define AP_GPS_UBLOX_ENABLED 1
+
+# INTERIM: plain u-blox (position only, no heading).
+# The X20D is not auto-detected by the 4.6.3 driver -- MON-VER hardware
+# generation matching only covers F9 ("00190000") and M10 ("000A0000") -- so it
+# will fall through as an unknown generation and run with generic settings.
+# Expect a fix but NO yaw. Change to the dual-antenna type once PORTING.md
+# step 3 lands.
+define HAL_GPS1_TYPE_DEFAULT 2

@@ -40,6 +40,26 @@ esac
 
 mkdir -p "${RELEASE_DIR}"
 
+# Output base name. FC vehicles keep waf's name (arducopter.apj ...) because
+# release.sh renames them per tag/vehicle at publish time. AP_Periph boards
+# instead get "<board>-v<version>" right here, so the file on disk already says
+# WHICH product and WHICH version it is: every peripheral is built from the same
+# AP_Periph target and would otherwise land as an identical "AP_Periph.apj"
+# (AP-RTK_dual vs AP-RTK_G5H). Version source order mirrors build_ap.sh:
+# NOVAX_VERSION env -> boards/<board>/VERSION -> repo VERSION -> dev.
+if [[ "${VEHICLE}" == "AP_Periph" ]]; then
+    NOVAX_VERSION="${NOVAX_VERSION:-$(cat "${ROOT_DIR}/boards/${BOARD_NAME}/VERSION" 2>/dev/null \
+        || cat "${ROOT_DIR}/VERSION" 2>/dev/null || echo dev)}"
+    NOVAX_VERSION="$(tr -d '[:space:]' <<< "${NOVAX_VERSION}")"
+    OUT_BASE="${BOARD_NAME}-v${NOVAX_VERSION}"
+    # stale unnamed copies from older packaging runs would make release.sh see a
+    # second ".apj" and treat the board as multi-vehicle -- drop them.
+    rm -f "${RELEASE_DIR}"/AP_Periph.apj "${RELEASE_DIR}"/AP_Periph.bin \
+          "${RELEASE_DIR}"/AP_Periph.hex "${RELEASE_DIR}"/AP_Periph_with_bl.hex
+else
+    OUT_BASE="${VEHICLE_BIN}"
+fi
+
 copy_if_exists() {
     local src="$1"
     local dst="$2"
@@ -51,9 +71,9 @@ copy_if_exists() {
 copy_if_exists "${BOOTLOADER_DIR}/${BOARD_NAME}_bl.bin" "${RELEASE_DIR}/${BOARD_NAME}_bl.bin"
 copy_if_exists "${BOOTLOADER_DIR}/${BOARD_NAME}_bl.hex" "${RELEASE_DIR}/${BOARD_NAME}_bl.hex"
 copy_if_exists "${BOOTLOADER_DIR}/${BOARD_NAME}_bl.elf" "${RELEASE_DIR}/${BOARD_NAME}_bl.elf"
-copy_if_exists "${BIN_DIR}/${VEHICLE_BIN}.apj" "${RELEASE_DIR}/${VEHICLE_BIN}.apj"
-copy_if_exists "${BIN_DIR}/${VEHICLE_BIN}.bin" "${RELEASE_DIR}/${VEHICLE_BIN}.bin"
-copy_if_exists "${BIN_DIR}/${VEHICLE_BIN}_with_bl.hex" "${RELEASE_DIR}/${VEHICLE_BIN}_with_bl.hex"
+copy_if_exists "${BIN_DIR}/${VEHICLE_BIN}.apj" "${RELEASE_DIR}/${OUT_BASE}.apj"
+copy_if_exists "${BIN_DIR}/${VEHICLE_BIN}.bin" "${RELEASE_DIR}/${OUT_BASE}.bin"
+copy_if_exists "${BIN_DIR}/${VEHICLE_BIN}_with_bl.hex" "${RELEASE_DIR}/${OUT_BASE}_with_bl.hex"
 
 # AP_Periph builds emit only .bin/.apj (no combined hex). Generate Intel HEX here:
 # app-only, bootloader-only, and a combined bootloader+app hex.
@@ -68,7 +88,7 @@ copy_if_exists "${BIN_DIR}/${VEHICLE_BIN}_with_bl.hex" "${RELEASE_DIR}/${VEHICLE
 if [[ "${VEHICLE}" == "AP_Periph" ]]; then
     OBJCOPY="${OBJCOPY:-arm-none-eabi-objcopy}"
     APP_ELF="${BIN_DIR}/AP_Periph"
-    APP_BIN="${RELEASE_DIR}/AP_Periph.bin"
+    APP_BIN="${RELEASE_DIR}/${OUT_BASE}.bin"
     BL_BIN="${RELEASE_DIR}/${BOARD_NAME}_bl.bin"
     if command -v "${OBJCOPY}" >/dev/null 2>&1 && [[ -f "${APP_BIN}" && -f "${BL_BIN}" ]]; then
         # App load address (e.g. 0x08010000) from the ELF's first ihex record; the
@@ -80,16 +100,16 @@ if [[ "${VEHICLE}" == "AP_Periph" ]]; then
         APP_BASE="$(sed -n '1{s/^:02000004\([0-9A-Fa-f]\{4\}\).*/0x\10000/p;q}' "${APP_HEX_TMP}")"
         rm -f "${APP_HEX_TMP}"
         APP_BASE="${APP_BASE:-0x08010000}"
-        "${OBJCOPY}" -I binary -O ihex --change-addresses "${APP_BASE}" "${APP_BIN}" "${RELEASE_DIR}/AP_Periph.hex"
+        "${OBJCOPY}" -I binary -O ihex --change-addresses "${APP_BASE}" "${APP_BIN}" "${RELEASE_DIR}/${OUT_BASE}.hex"
         "${OBJCOPY}" -I binary -O ihex --change-addresses 0x08000000   "${BL_BIN}"  "${RELEASE_DIR}/${BOARD_NAME}_bl.hex"
         # The combined bootloader+app hex is best produced natively by waf
         # (bin/AP_Periph_with_bl.hex via Tools/scripts/make_intel_hex.py), which
         # needs the python 'intelhex' module:  pip install intelhex .  When that
         # native hex exists it is copied above; only synthesize a board-named
         # combined hex here as a FALLBACK when intelhex was missing at build time.
-        if [[ ! -f "${RELEASE_DIR}/AP_Periph_with_bl.hex" ]]; then
-            { head -n -1 "${RELEASE_DIR}/${BOARD_NAME}_bl.hex"; cat "${RELEASE_DIR}/AP_Periph.hex"; } \
-                > "${RELEASE_DIR}/${BOARD_NAME}_with_bl.hex"
+        if [[ ! -f "${RELEASE_DIR}/${OUT_BASE}_with_bl.hex" ]]; then
+            { head -n -1 "${RELEASE_DIR}/${BOARD_NAME}_bl.hex"; cat "${RELEASE_DIR}/${OUT_BASE}.hex"; } \
+                > "${RELEASE_DIR}/${OUT_BASE}_with_bl.hex"
         fi
     else
         echo "warning: ${OBJCOPY} or .bin missing; skipping AP_Periph hex generation" >&2
@@ -101,11 +121,12 @@ fi
 # manifest.txt was last-writer-wins: it claimed "vehicle=plane" while listing the
 # arducopter files sitting next to it. Each vehicle now owns its own manifest and
 # lists only its own artifacts; release.sh reads whichever ones are present.
-MANIFEST_PATH="${RELEASE_DIR}/manifest_${VEHICLE_BIN}.txt"
+MANIFEST_PATH="${RELEASE_DIR}/manifest_${OUT_BASE}.txt"   # release.sh looks for manifest_<apj basename>.txt
 {
     echo "board=${BOARD_NAME}"
     echo "vehicle=${VEHICLE}"
     echo "vehicle_bin=${VEHICLE_BIN}"
+    echo "out_base=${OUT_BASE}"
     if [[ -n "${VEHICLE_LABEL:-}" ]]; then echo "vehicle_label=${VEHICLE_LABEL}"; fi
     echo "source_tree=firmware/ardupilot"
     echo "board_config=boards/${BOARD_NAME}/ardupilot"
@@ -114,7 +135,7 @@ MANIFEST_PATH="${RELEASE_DIR}/manifest_${VEHICLE_BIN}.txt"
     echo "generated_at=$(date -Iseconds)"
     echo "files:"
     find "${RELEASE_DIR}" -maxdepth 1 -type f \
-         \( -name "${VEHICLE_BIN}.*" -o -name "${VEHICLE_BIN}_*" \
+         \( -name "${OUT_BASE}.*" -o -name "${OUT_BASE}_*" \
             -o -name "${BOARD_NAME}_bl.*" \) -printf '  %f\n' | sort
 } > "${MANIFEST_PATH}"
 

@@ -1,0 +1,183 @@
+# =============================================================================
+# AP-RTK G5H - ArduPilot AP_Periph Hardware Definition (novaX-ALUX)
+# =============================================================================
+# DroneCAN RTK GNSS + dual-antenna heading + compass peripheral.
+#
+# Derived from the novaX AP-RTK dual board config (CUAV C-RTK2-HP lineage).
+# The carrier board, MCU, compass, CAN and power tree are reused; ONLY the GNSS
+# receiver differs:
+#
+#     AP-RTK dual : Unicore UM982            -> GPS_TYPE 25 (NMEA moving baseline)
+#     AP-RTK G5H  : Septentrio mosaic-G5 P3H -> GPS_TYPE 26 (SBF dual antenna)
+#
+# Heading path (verified in this tree, ArduPilot 4.6.3):
+#   AP_GPS_SBF sends "sso,Stream1,COM1,PVTGeodetic+DOP+ReceiverStatus+
+#   VelCovGeodetic+BaseVectorGeod+AttCovEuler+AuxAntPositions,msec100" and
+#   "sga, MultiAntenna"; yaw is computed from the AuxAntPositions block via
+#   calculate_moving_base_yaw() (needs GPS1_MB_TYPE=2 + GPS1_MB_OFS_* on THIS
+#   node - see defaults.parm). AP_Periph then broadcasts ardupilot.gnss.Heading
+#   (Tools/AP_Periph/gps.cpp) which the flight controller consumes in
+#   AP_GPS_DroneCAN::handle_heading_msg().
+#
+# One-time factory receiver setup (not sent by the driver, mosaic-G5 only):
+#   setFrontendMode, DualAnt
+#   exeCopyConfigFile, Current, Boot
+# =============================================================================
+
+# hw definition file for processing by chibios_pins.py
+
+# MCU class and specific type
+MCU STM32F4xx STM32F412Rx
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# bootloader starts firmware at 64k
+FLASH_RESERVE_START_KB 64
+
+# store parameters in pages 2 and 3
+STORAGE_FLASH_PAGE 2
+define HAL_STORAGE_SIZE 8192
+
+# board ID for firmware load.
+# New novaX id (62xx series). Not shared with AP-RTK dual (1085) or AP-RTK X20D
+# (6205): the three boards share a carrier and connector but carry different
+# receivers, and a shared id would let the wrong firmware be pushed over
+# DroneCAN and boot into a receiver it cannot talk to.
+APJ_BOARD_ID 6206
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# DroneCAN node name shown in the Mission Planner DroneCAN device list.
+define CAN_APP_NODE_NAME "AP-RTK G5H"
+
+STM32_ST_USE_TIMER 5
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+define CH_CFG_ST_FREQUENCY 1000000
+
+# assume 512k flash part
+FLASH_SIZE_KB 512
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# order of UARTs. v3: SERIAL0 = USB (OTG1) for the AP_Periph MAVLink GCS
+# (parameters, uploader.py reboot, param4=99 soft-DFU); USART1 debug console
+# is SERIAL1; USART2 (GNSS COM1) is index 4 -> HAL_PERIPH_GPS_PORT_DEFAULT.
+SERIAL_ORDER OTG1 USART1 EMPTY EMPTY USART2
+
+# USB-C -> STM32F412 OTG_FS (schematic v3). The mosaic-G5 USB pins are left
+# open; the receiver is configured/upgraded over its COM2 UART (up to 4 Mbps,
+# RxTools/RxUpgrade serial) or through the DroneCAN serial tunnel below.
+PA11 USB_FS_DM OTG1
+PA12 USB_FS_DP OTG1
+
+# a LED to flash
+PB0 LED OUTPUT LOW
+
+# USART1 for debug
+PB6 USART1_TX USART1 NODMA
+PB7 USART1_RX USART1 NODMA
+define DEFAULT_SERIAL1_BAUD 57600
+
+# USART2 for GNSS (mosaic-G5 COM1). The SBF driver raises the receiver to
+# 230400 baud itself ("scs,COM1,baud230400,...").
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# one I2C bus
+PA8 I2C3_SCL I2C3
+PB4 I2C3_SDA I2C3
+
+I2C_ORDER I2C3
+
+# =============================================================================
+# Compass - RM3100 on I2C3 @ 0x20
+# =============================================================================
+# Inherited from AP-RTK dual, where the RM3100 Z axis was measured inverted on
+# the PCB and corrected with AP_RM3100_REVERSAL_MASK 4. Carried over because
+# the carrier board and part placement are reused - re-run the four-heading
+# raw X/Y/Z check on the first article and drop the mask if it no longer holds.
+COMPASS RM3100 I2C:0:0x20 false ROTATION_NONE
+define AP_RM3100_REVERSAL_MASK 4
+
+# safety LED, active low
+PB5 SAFE_LED OUTPUT HIGH
+define SAFE_LED_ON 0
+
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
+define HAL_DISABLE_ADC_DRIVER TRUE
+
+define HAL_NO_GPIO_IRQ
+
+# avoid RCIN thread to save memory
+define HAL_USE_RTC FALSE
+
+define DMA_RESERVE_SIZE 0
+
+# enable CAN support
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+PB1 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(70)
+
+# receiver reset (mosaic-G5 nRST_IN, active low, internal pull-up)
+PA4 RTK_RESET_N OUTPUT HIGH
+
+# PPS (mosaic-G5 PPS1)
+PA7 PPS INPUT PULLUP
+
+define HAL_DEVICE_THREAD_STACK 768
+
+# embedded parameters: defaults.parm in this directory (GPS1_MB_TYPE / OFS)
+define AP_PARAM_MAX_EMBEDDED_PARAM 256
+
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+
+define HAL_PERIPH_ENABLE_GPS
+# GNSS UART = SERIAL_ORDER index 4 (USART2)
+define HAL_PERIPH_GPS_PORT_DEFAULT 4
+
+# Required: the SBF dual-antenna yaw path (AuxAntPositions ->
+# calculate_moving_base_yaw) is compiled only under GPS_MOVING_BASELINE.
+define GPS_MOVING_BASELINE 1
+
+define HAL_PERIPH_ENABLE_MAG
+define HAL_COMPASS_MAX_SENSORS 1
+
+# =============================================================================
+# USB service features (v3)
+# =============================================================================
+# MAVLink over USB (SERIAL0): parameter access without the CAN bus and the
+# generic MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN param4=99 (+magic 42,24,71)
+# soft-DFU entry handled in GCS_Common.cpp.
+define HAL_GCS_ENABLED 1
+# accept uploader.py's reboot-to-bootloader request on SERIAL0 (USB)
+define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
+# software DFU: app sets the RTC-backup flag, bootloader jumps to ROM
+# 0x1FFF0000 (F4). Needs the _with_bl.hex once - see hwdef-bl.dat.
+ENABLE_DFU_BOOT 1
+# DroneCAN serial tunnel (uavcan.tunnel.Targetted): the FC can expose this
+# node's GPS_PORT as a virtual serial port (FC params CAN_D1_UC_S1_NOD/S1_IDX=-1)
+# so RxTools reaches the receiver's COM1 without touching the board.
+define AP_UART_MONITOR_ENABLED 1
+
+# =============================================================================
+# GNSS - Septentrio mosaic-G5 P3H (SBF, dual antenna)
+# =============================================================================
+define AP_GPS_BACKEND_DEFAULT_ENABLED 0
+define AP_GPS_SBF_ENABLED 1
+
+# SBF dual-antenna receiver on the receiver's COM1
+define HAL_GPS1_TYPE_DEFAULT 26
+define HAL_GPS_COM_PORT_DEFAULT 1
+define GPS_SBF_STREAM_NUMBER 1

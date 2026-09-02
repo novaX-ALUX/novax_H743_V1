@@ -1,0 +1,19 @@
+board: AP-RTK_X20D
+display_name: AP-RTK X20D
+platform:
+  - ardupilot
+firmware_type: AP_Periph
+node_name: AP-RTK X20D
+mcu: STM32F412Rx
+package: LQFP-64
+bootloader_board_id: 6205
+source_tree: firmware/ardupilot
+board_config: boards/AP-RTK_X20D/ardupilot
+based_on: AP-RTK_dual (novaX) — itself derived from CUAV C-RTK2-HP
+sensors:
+  compass: RM3100 (I2C3 @ 0x20) — axis reversal MUST be re-measured on this PCB
+  gnss: u-blox ZED-X20D — single-module dual-antenna heading (driver port required)
+can:
+  can1: DroneCAN node
+function: RTK GNSS + dual-antenna heading + compass DroneCAN peripheral
+status: WIP — ArduPilot has no ZED-X20D driver yet. See PORTING.md before building.

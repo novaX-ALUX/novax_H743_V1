@@ -106,7 +106,10 @@ ls releases/AF-F4_nano/ardupilot/
 # arducopter.apj  arducopter_with_bl.hex  AF-F4_nano_bl.bin  ...
 
 ls releases/AP-RTK_dual/ardupilot/
-# AP_Periph.bin  AP_Periph.apj  AP_Periph_with_bl.hex  AP-RTK_dual_bl.bin  ...
+# AP-RTK_dual-v0.1.0.bin  AP-RTK_dual-v0.1.0.apj  AP-RTK_dual-v0.1.0_with_bl.hex  AP-RTK_dual_bl.bin  ...
+# (AP_Periph boards are named <board>-v<VERSION> at packaging time -- the waf
+#  target is the same AP_Periph for every peripheral, so the bare name would not
+#  say which product the file belongs to)
 ```
 
 ## Firmware Versioning
@@ -153,8 +156,8 @@ DroneCAN peripherals (e.g. AP-RTK dual — no USB DFU):
 
 | Method | File | When |
 |--------|------|------|
-| STLink / SWD | `AP_Periph_with_bl.hex` | First flash (bootloader + app, at `0x08000000`) |
-| Mission Planner → DroneCAN | `AP_Periph.bin` | Firmware update over CAN |
+| STLink / SWD | `<board>-v<ver>_with_bl.hex` | First flash (bootloader + app, at `0x08000000`) |
+| Mission Planner → DroneCAN | `<board>-v<ver>.bin` / `.apj` | Firmware update over CAN (the bootloader refuses a file whose `board_id` does not match) |
 
 ## How It Works
 

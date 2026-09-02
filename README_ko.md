@@ -106,7 +106,9 @@ ls releases/AF-F4_nano/ardupilot/
 # arducopter.apj  arducopter_with_bl.hex  AF-F4_nano_bl.bin  ...
 
 ls releases/AP-RTK_dual/ardupilot/
-# AP_Periph.bin  AP_Periph.apj  AP_Periph_with_bl.hex  AP-RTK_dual_bl.bin  ...
+# AP-RTK_dual-v0.1.0.bin  AP-RTK_dual-v0.1.0.apj  AP-RTK_dual-v0.1.0_with_bl.hex  AP-RTK_dual_bl.bin  ...
+# (AP_Periph 보드는 패키징 때 <board>-v<VERSION> 으로 이름이 붙는다 -- 모든 주변장치가
+#  같은 AP_Periph 타깃이라 맨 이름으로는 어느 제품 파일인지 알 수 없기 때문)
 ```
 
 ## 펌웨어 버전
@@ -153,8 +155,8 @@ DroneCAN 주변장치 (예: AP-RTK dual — USB DFU 없음):
 
 | 방법 | 파일 | 시점 |
 |------|------|------|
-| STLink / SWD | `AP_Periph_with_bl.hex` | 최초 플래시 (부트로더 + 앱, `0x08000000`) |
-| Mission Planner → DroneCAN | `AP_Periph.bin` | CAN으로 펌웨어 업데이트 |
+| STLink / SWD | `<board>-v<ver>_with_bl.hex` | 최초 플래시 (부트로더 + 앱, `0x08000000`) |
+| Mission Planner → DroneCAN | `<board>-v<ver>.bin` / `.apj` | CAN으로 펌웨어 업데이트 (`board_id` 가 다른 파일은 부트로더가 거부) |
 
 ## 동작 원리
 

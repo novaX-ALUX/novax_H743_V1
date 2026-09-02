@@ -1,0 +1,11 @@
+# AP-RTK G5H embedded node defaults (ROMFS defaults.parm)
+# The SBF dual-antenna yaw is computed on this node by calculate_moving_base_yaw(),
+# which requires a custom-base offset. MB_TYPE 1 (alternate instance) must NOT be
+# used here: GPS_MAX_RECEIVERS is 1, so params[instance^1] would be out of range.
+GPS1_MB_TYPE 2
+# Baseline of the AP-RTK dual manual layout: ANT1 (main) 0.50 m in front of ANT2 (aux),
+# both on the centreline at equal height. Adjust on the node (DroneCAN parameters)
+# if the antenna separation differs - a mismatch > 20 % rejects the heading.
+GPS1_MB_OFS_X 0.50
+GPS1_MB_OFS_Y 0
+GPS1_MB_OFS_Z 0
