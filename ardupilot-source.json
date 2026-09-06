@@ -1,7 +1,7 @@
 {
   "repository": "https://github.com/novaX-ALUX/ardupilot.git",
   "branch": "novax-workspace",
-  "commit": "bd40652a37774653d6d3e6f9a18cc603ead4249f",
+  "commit": "c314528bbc205b59013c9b5d724e1bb1d9762355",
   "upstreamCommit": "92b0cd788ec29406f26c6f9c31d5ceedbd1cc538",
   "path": "../_shared/ardupilot",
   "note": "Pins shared source, patch recipes and GCC 10.2.1 selection. Applying recipes creates local source changes; this is not firmware release or hardware approval."
