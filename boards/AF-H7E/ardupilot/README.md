@@ -42,11 +42,9 @@ says which one you are running. The build stamps the vehicle into the GCS banner
 
 Flashing notes:
 
-- `arducopter_with_bl.hex` / `arduplane_with_bl.hex` — **first flash** (bootloader + app) via STM32 ROM
-  DFU (BOOT0) or ST-Link/SWD. Required to install the novaX `6202` bootloader.
-- `arducopter.apj` / `arduplane.apj` — OTA update once the `6202` bootloader is present.
-- A bootloader built for a different board id only accepts a matching `.apj`;
-  use DFU/SWD (or a forced upload) to switch a board between firmwares.
+- `arducopter_with_bl.hex` / `arduplane_with_bl.hex` are local build names; published files include the board, version and `Copter`/`Plane` label. Use the matching combined file for recovery via software-entered DFU when a functioning compatible app is present, or SWD/ST-Link for a blank/non-booting board. AF-H7E has no user BOOT0 button.
+- `arducopter.apj` / `arduplane.apj` are local app package names. Use the matching published `.apj` for USB bootloader/serial updates once the `6202` bootloader is present.
+- A board ID mismatch is a stop condition: recheck the product, hardware revision and vehicle image. Do not force an incompatible upload or assume a generic upstream image is equivalent.
 
 Verify before flight:
 

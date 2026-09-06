@@ -10,7 +10,8 @@ board_config: boards/AF-H7_nano/ardupilot
 sensors:
   imu1: ICM-42688-P
   imu2: ICM-42688-P
-  barometer: DPS310 / SPA06-003
+  barometer: DPS310/DPS368 labels at U22 in the schematic; verify fitted revision
+  barometer_firmware_backends: DPS310 / SPL06
   compass: IST8310
   osd: AT7456E
 can:
@@ -25,8 +26,7 @@ ports:
   serial8: Spare
 i2c:
   bus0_internal:
-    - DPS310
-    - SPA06-003
+    - DPS310/DPS368 (one barometer; alternative backend probes)
     - IST8310
   bus1_external:
     - GPS/Compass connector

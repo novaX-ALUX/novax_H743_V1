@@ -4,10 +4,7 @@ DroneCAN RTK GNSS + dual-antenna heading + compass peripheral, built on the
 novaX AP-RTK dual carrier board with the Unicore UM982 replaced by a
 **u-blox ZED-X20D**.
 
-> **Status: work in progress — do not build for release yet.**
-> ArduPilot has no ZED-X20D driver. This config builds a position-only
-> peripheral; heading does not work until the driver work in
-> [`../PORTING.md`](../PORTING.md) is done. Read that first.
+> **Development only; no verified public firmware release.** R2 hardware artifacts exist in the workspace, but hardware delivery does not establish runtime GNSS/heading or flight qualification. The receiver/backend statements below describe the inherited baseline, not the current state of all upstream ArduPilot versions or uncommitted local driver work. See [current status](../PORTING.md).
 
 Key hardware mapping:
 
@@ -37,8 +34,7 @@ backwards from the board it is meant to succeed.
 
 ## Differences vs AP-RTK dual
 
-Everything except the receiver is carried over unchanged — MCU, compass, CAN,
-power tree, LED and pinout all come straight from AP-RTK dual.
+The initial firmware configuration was derived from AP-RTK dual. The current X20D hardware has its own R2 design; do not assume an identical power tree, USB wiring, component orientation or pinout from that initial inheritance.
 
 - **GNSS backend**: NMEA/Unicore (`AP_GPS_NMEA_UNICORE_ENABLED`,
   `NMEA_UNICORE_SETUP`, `GPS_TYPE 25`) removed; u-blox UBX backend
@@ -76,13 +72,13 @@ Build:
 scripts/build_ap.sh AP-RTK_X20D AP_Periph
 ```
 
-Flash (this board has no USB DFU):
+Development artifact names (not a release or recovery approval):
 
 | File | When |
 |------|------|
-| `AP-RTK_X20D_with_bl.hex` | **First flash** — combined bootloader + app, one-shot via ST-Link / SWD (PA13/PA14), e.g. STM32CubeProgrammer |
-| `AP_Periph.apj` / `AP_Periph.bin` | Update over DroneCAN (Mission Planner SLCAN → Update firmware) once the bootloader is present |
-| `AP-RTK_X20D_bl.bin` + `AP_Periph.bin` | Alternative two-step SWD flash: bootloader at `0x08000000`, app at `0x08010000` |
+| `AP-RTK_X20D-v<ver>_with_bl.hex` | Combined bootloader/app package; validate against the actual R2 board before any recovery operation |
+| `AP-RTK_X20D-v<ver>.apj` / `.bin` | Board-scoped AP_Periph packages; not evidence of a tested CAN/USB update path |
+| `AP-RTK_X20D_bl.bin` | Development bootloader; recheck memory layout and hardware recovery before use |
 
 Layout:
 

@@ -16,4 +16,4 @@ sensors:
 can:
   can1: DroneCAN node
 function: RTK GNSS + dual-antenna heading + compass DroneCAN peripheral
-status: WIP — ArduPilot has no ZED-X20D driver yet. See PORTING.md before building.
+status: Development only; no verified public firmware release. Workspace R2 hardware artifacts exist. Driver/heading and hardware qualification remain separate release gates; see PORTING.md.

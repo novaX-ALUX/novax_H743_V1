@@ -1,42 +1,42 @@
-# 펌웨어 버전 규칙 — 하드웨어(보드)별 독립 버전
+# 보드별 독립 펌웨어 버전
 
-각 보드는 **자기만의 버전**을 가진다. 한 보드를 고쳐도 다른 보드 버전은 올라가지 않는다.
+현재 소스의 정본은 `boards/<board>/VERSION`이다. 한 보드를 변경해도 다른 보드의 버전을 자동으로 올리지 않는다.
 
-## 버전 소스
-보드 버전은 **`boards/<board>/VERSION`** 파일 한 줄(`X.Y.Z`)에 있다.
+## 버전 선택
 
-빌드 시 `scripts/build_ap.sh`가 이 순서로 버전을 정한다:
-1. `NOVAX_VERSION` 환경변수 (일회성 오버라이드)
-2. **`boards/<board>/VERSION`** ← 평상시 여기
-3. 루트 `VERSION` (보드 파일이 없을 때의 기본값)
-4. `dev`
+1. `NOVAX_VERSION` 환경변수: 검토된 일회성 override
+2. `boards/<board>/VERSION`: 평상시 정본
+3. 루트 `VERSION`: 보드 파일이 없는 경우의 fallback
+4. `dev`: 위 값이 모두 없을 때
 
-정해진 버전은 GCS에 `novaX v<X.Y.Z> (g<hash>)`로 표시된다(`AP_CUSTOM_FIRMWARE_STRING`).
+`build_ap.sh`의 FC 문자열은 `novaX Copter v1.3.0`, `novaX Plane v1.3.0`처럼 기체 종류를 포함한다. upstream 버전과 Git 해시는 별도 정보를 유지한다. AP_Periph는 이 FC 문자열을 주입하지 않으며 `package_fw.sh`가 `<board>-v<version>` 파일명으로 산출물을 구분한다.
 
-## 보드 버전 올리기
-```bash
-echo "0.2.4" > boards/AF-F7_mini/VERSION   # 그 보드만 올림
-scripts/build_ap.sh AF-F7_mini copter      # boards/AF-F7_mini/VERSION 자동 사용
-```
+## 현재 설정 전체
 
-## 릴리스 태그
-- **보드별 태그** `‹board›-vX.Y.Z` (예: `AF-F7_mini-v0.2.4`) → `scripts/release.sh`가 `boards/‹board›/VERSION`과 대조. 불일치면 거부(의도적이면 `ALLOW_VERSION_MISMATCH=1`).
-- **글로벌 태그** `vX.Y.Z` → 루트 `VERSION`과 대조.
+아래 표는 소스 정의의 현재 값이다. 출시 승인·실기 통과·업로드 완료 여부를 VERSION 파일만으로 판단하지 않는다. 실제 게시된 버전은 [릴리스 목록](https://github.com/novaX-ALUX/fc/releases)과 파일 해시를 확인한다.
 
-## 예외
-- **AP_Periph**(예: `AP-RTK_dual`, `AP-RTK_G5H`)는 자체 트랙. `build_ap.sh`가 펌웨어 안에 버전 문자열을 찍지는 않지만, `package_fw.sh`가 산출물 **파일 이름**을 `<board>-v<VERSION>.apj/.bin/.hex/_with_bl.hex` 로 붙인다(모든 주변장치가 같은 `AP_Periph` 타깃이라 맨 이름은 제품 구분이 안 됨). `release.sh` 는 이 이름을 그대로 자산으로 올린다.
+<!-- board-inventory:start -->
+| Board directory | Scope | Build MCU target | Board ID | Source version | Configuration present |
+|---|---|---|---|---|---|
+| [AD-ME1](boards/AD-ME1/ardupilot/) | Rebrand variant | `STM32F405xx` | 6203 | 0.1.0 | ArduPilot |
+| [AF-F4_nano](boards/AF-F4_nano/ardupilot/) | FC | `STM32F405xx` | 6203 | 1.2.3 | ArduPilot + Betaflight config |
+| [AF-F4_nano_v2](boards/AF-F4_nano_v2/ardupilot/) | FC | `STM32F405xx` | 6204 | 1.0.11 | ArduPilot |
+| [AF-F4_T10_nano](boards/AF-F4_T10_nano/ardupilot/) | FC | `STM32F405xx` | 6203 | 1.3.4 | ArduPilot |
+| [AF-F7_mini](boards/AF-F7_mini/ardupilot/) | FC | `STM32F767xx` | 6201 | 1.3.0 | ArduPilot |
+| [AF-H7_nano](boards/AF-H7_nano/ardupilot/) | FC | `STM32H743xx` | 6200 | 1.2.3 | ArduPilot + Betaflight config |
+| [AF-H7E](boards/AF-H7E/ardupilot/) | FC | `STM32H743xx` | 6202 | 1.3.0 | ArduPilot |
+| [AP-RTK_dual](boards/AP-RTK_dual/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 1085 | 0.1.0 | AP_Periph |
+| [AP-RTK_G5H](boards/AP-RTK_G5H/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 6206 | 0.1.0 | AP_Periph |
+| [AP-RTK_X20D](boards/AP-RTK_X20D/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 6205 | 0.1.0 | AP_Periph |
+<!-- board-inventory:end -->
 
-## 현재 버전
-| 보드 | 버전 |
-|------|------|
-| AF-F4_nano | 0.2.3 |
-| AF-F4_T10_nano | 0.3.4 |
-| AF-F7_mini | 0.2.3 |
-| AF-H7E | 0.2.9 |
-| AF-H7_nano | 0.2.3 |
-| AD-ME1 | 0.1.0 |
-| AP-RTK_dual | 0.1.0 (AP_Periph) |
-| AP-RTK_X20D | 0.1.0 (AP_Periph · 보류 — `boards/AP-RTK_X20D/PORTING.md` 참조) |
-| AP-RTK_G5H | 0.1.0 (AP_Periph · 설계 중 — mosaic-G5 P3H, SBF type 26. 회로 `41_Kicad/circuits/ap_rtk_g5h.py`) |
+## 릴리스 태그와 산출물
 
-> 이전엔 루트 `VERSION` 하나가 전 보드에 일괄 적용돼, AF-H7E의 DFU 반복(→0.2.9)이 다른 보드까지 끌어올리는 문제가 있었다. 이제 보드별로 분리됨.
+- 보드별 태그 `<board>-vX.Y.Z`는 해당 보드 VERSION과 대조한다.
+- 과거 글로벌 태그 `vX.Y.Z` 지원은 남아 있지만 루트 VERSION과만 대조한다. 제품별 출시에는 보드별 태그와 명시적인 보드 인자를 사용한다.
+- 배포된 태그에 같은 이름의 자산을 덮어쓰면 기존 해시·서명·카탈로그가 불일치할 수 있다. 기존 태그를 임의 재사용하지 않는다.
+- `releases/<board>/ardupilot/`의 FC 내부 파일은 `arducopter.apj`/`arduplane.apj` 등이며 게시 때 제품·기체명이 붙는다. 여러 기체 파일을 한 보드 이름으로 혼동하지 않는다.
+- AP_Periph 내부 파일은 처음부터 `<board>-v<version>.apj/.bin/_with_bl.hex` 형식이다. X20D의 개발 버전 파일은 공개 펌웨어 출시를 의미하지 않는다.
+- AF-F4_nano_v2의 서명 대상 `.apj`와 `_with_bl.hex`에는 대응하는 `.aff4t10.json`이 필요하다. 서명·버전 불일치 검사를 우회하지 않는다.
+
+검사: `python3 scripts/validate_docs.py`. 보드 ID·버전·설정 목록이 바뀌면 README 3개 언어판과 이 표도 함께 갱신해야 검사에 통과한다. 중국어 번역 및 선택 링크는 제거했다.

@@ -14,8 +14,8 @@ sensors:
   compass: IST8310 (internal) + external probe
 fram: true
 can:
-  fdcan1: true
-  fdcan2: true
+  can1: true
+  can2: true
 ports:
   serial1: TELEM1 (USART2, flow control)
   serial2: TELEM2 (USART3, flow control)

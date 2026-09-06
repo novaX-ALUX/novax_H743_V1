@@ -1,172 +1,89 @@
-# novaX フライトコントローラー
+# novaX FC
 
-[English](README.md) | [한국어](README_ko.md) | [中文](README_zh.md)
+[English](README.md) | [한국어](README_ko.md)
 
-novaX フライトコントローラーおよび DroneCAN ペリフェラル向けのボード定義、ビルドスクリプト、ファームウェアリリース。
+開発元は[novaX-ALUX/fc](https://github.com/novaX-ALUX/fc)です。FC、AD-ME1派生設定、分離待ちのGNSS設定3種類を含みます。**GNSSはFCではなく、GNSS・共有ソースの分離は未完了です。**
 
-## 対応ボード
+## 現在の全ボード設定
 
-| ボード | MCU | IMU | 気圧計 | コンパス | GPS | ファームウェア |
-|--------|-----|-----|--------|----------|-----|----------------|
-| AF-F4 nano | STM32F405 | ICM-42688-P | SPL06 | QMC5883P (外付け) | MAX-M10S | ArduPilot / Betaflight |
-| AF-H7 nano | STM32H743 | デュアル ICM-42688-P | DPS310 | IST8310 (内蔵) | - | ArduPilot / Betaflight |
-| AF-F7 mini&nbsp;‡ | STM32F765 | ICM-20689 + ICM-20602 + BMI055 | MS5611 | IST8310 (内蔵) | - | ArduPilot |
-| AF-H7E&nbsp;‡ | STM32H753 | ICM-42688-P + BMI088 + ICM-20649 | 2× ICP-20100 | RM3100 | - | ArduPilot |
-| AP-RTK dual&nbsp;† | STM32F412 | - | - | RM3100 | デュアルアンテナ RTK (ムービングベースライン) | ArduPilot AP_Periph |
+実際のhwdef.dat、ブートローダーID、各VERSION、設定ファイルによる一覧です。設定の存在は実機認定・公開完了を意味しません。Build MCU targetはソフトウェア名です。AF-F7 miniの宣言部品はSTM32F765IIK6でバックエンドはSTM32F767xx、AF-H7EはSTM32H753IIK6とSTM32H743xxです。交換部品番号と区別してください。
 
-† **DroneCAN ペリフェラル** (GPS + コンパスノード)。フライトコントローラーではありません。CUAV C-RTK2-HP ベース、ボード ID `1085`（CUAV と同一に維持 → DroneCAN OTA 互換）。
+<!-- board-inventory:start -->
+| Board directory | Scope | Build MCU target | Board ID | Source version | Configuration present |
+|---|---|---|---|---|---|
+| [AD-ME1](boards/AD-ME1/ardupilot/) | Rebrand variant | `STM32F405xx` | 6203 | 0.1.0 | ArduPilot |
+| [AF-F4_nano](boards/AF-F4_nano/ardupilot/) | FC | `STM32F405xx` | 6203 | 1.2.3 | ArduPilot + Betaflight config |
+| [AF-F4_nano_v2](boards/AF-F4_nano_v2/ardupilot/) | FC | `STM32F405xx` | 6204 | 1.0.11 | ArduPilot |
+| [AF-F4_T10_nano](boards/AF-F4_T10_nano/ardupilot/) | FC | `STM32F405xx` | 6203 | 1.3.4 | ArduPilot |
+| [AF-F7_mini](boards/AF-F7_mini/ardupilot/) | FC | `STM32F767xx` | 6201 | 1.3.0 | ArduPilot |
+| [AF-H7_nano](boards/AF-H7_nano/ardupilot/) | FC | `STM32H743xx` | 6200 | 1.2.3 | ArduPilot + Betaflight config |
+| [AF-H7E](boards/AF-H7E/ardupilot/) | FC | `STM32H743xx` | 6202 | 1.3.0 | ArduPilot |
+| [AP-RTK_dual](boards/AP-RTK_dual/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 1085 | 0.1.0 | AP_Periph |
+| [AP-RTK_G5H](boards/AP-RTK_G5H/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 6206 | 0.1.0 | AP_Periph |
+| [AP-RTK_X20D](boards/AP-RTK_X20D/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 6205 | 0.1.0 | AP_Periph |
+<!-- board-inventory:end -->
 
-‡ 冗長 IMU を備えた**オートパイロット級**ボード: AF-F7 mini は PWM 出力を直接駆動（IO コプロセッサなし）し、AF-H7E は STM32F103 IO コプロセッサとイーサネットを搭載したモジュラー設計です。
+## 実際の構造
 
-すべてのフライトコントローラーは novaX-ALUX 予約レンジ `6200`–`6209` 内のボード ID を使用します: AF-H7 nano `6200`、AF-F7 mini `6201`、AF-H7E `6202`、AF-F4 nano `6203`（AF-F4 nano は SpeedyBee F4 の ID ではなく独自の novaX ID を使用するようになりました）。AP-RTK dual ペリフェラルは DroneCAN OTA 互換のため CUAV ID `1085` を維持します。
+将来の構想ではなく現在の構造です。ローカルの未追跡製品資料は新規cloneで取得できるとは限りません。GitHub Releasesは遠隔サービスでありソース内のフォルダーではありません。
 
-## リポジトリ構成
-
-```
-├── firmware/
-│   ├── ardupilot/              # ArduPilot ソース (git submodule)
-│   └── betaflight/             # Betaflight ソース (git submodule)
-├── boards/
-│   ├── AF-F4_nano/             # フライトコントローラー
-│   │   ├── ardupilot/          # hwdef.dat, hwdef-bl.dat, defaults.parm
-│   │   ├── betaflight/         # config.h
-│   │   └── docs/               # 回路図
-│   ├── AF-H7_nano/             # フライトコントローラー
-│   │   ├── ardupilot/          # hwdef.dat, hwdef-bl.dat, defaults.parm
-│   │   ├── betaflight/         # config.h
-│   │   └── docs/               # 回路図
-│   ├── AF-F7_mini/             # フライトコントローラー (no IOMCU)
-│   │   ├── ardupilot/          # hwdef.dat, hwdef-bl.dat, defaults.parm
-│   │   └── docs/               # 回路図 + ネットリスト
-│   ├── AF-H7E/                 # フライトコントローラー (modular, Ethernet)
-│   │   ├── ardupilot/          # hwdef.dat, hwdef-bl.dat, defaults.parm
-│   │   └── docs/               # 回路図 + ネットリスト
-│   └── AP-RTK_dual/            # DroneCAN AP_Periph ペリフェラル (GPS + コンパス)
-│       ├── ardupilot/          # hwdef.dat, hwdef-bl.dat
-│       └── metadata.yaml
-├── scripts/
-│   ├── sync_ap_board.sh        # ボード定義を AP ソースツリーへシンボリックリンク
-│   ├── build_ap.sh             # 構成 + ビルド + パッケージ化 (ArduPilot)
-│   ├── build_bf.sh             # ビルド + パッケージ化 (Betaflight)
-│   ├── package_fw.sh           # ファームウェア成果物を releases/ に収集
-│   └── release.sh              # GitHub Release を公開（個別ファイル）
-├── VERSION                     # 共有 novaX ファームウェアバージョン（全 FC 共通）
-├── releases/                   # ローカルビルド出力 (gitignored)
-│   └── <board>/
-│       ├── ardupilot/          # .apj, .hex, bootloader
-│       └── betaflight/         # .hex, .bin
-└── GitHub Releases             # 公開ファームウェア（ボードごとの個別ファイル）
+```text
+fc/
+├─ boards/
+│  ├─ AD-ME1/
+│  ├─ AF-F4_nano/
+│  ├─ AF-F4_nano_v2/
+│  ├─ AF-F4_T10_nano/
+│  ├─ AF-F7_mini/
+│  ├─ AF-H7_nano/
+│  ├─ AF-H7E/
+│  ├─ AP-RTK_dual/
+│  ├─ AP-RTK_G5H/
+│  └─ AP-RTK_X20D/
+├─ firmware/
+│  ├─ ardupilot/     # pinned Git submodule
+│  └─ betaflight/    # pinned Git submodule
+├─ patches/ardupilot/
+├─ scripts/          # sync, build, package, release, validation
+├─ VERSION           # fallback; boards/<board>/VERSION takes priority
+├─ VERSIONING.md
+├─ build/            # generated, ignored
+└─ releases/         # generated, ignored
 ```
 
-## はじめに
+## ビルドと独立バージョン
 
-### クローン
+固定upstreamの依存関係を備えたLinux/WSLを使用します。ビルド前にnovaXパッチを適用し警告を解決します。既存の未コミット作業を上書きしません。Betaflight設定はAF-F4_nanoとAF-H7_nanoのみで、設定存在はビルド検証の代わりではありません。
 
 ```bash
 git clone --recurse-submodules --shallow-submodules https://github.com/novaX-ALUX/fc.git
 cd fc
-```
-
-### ArduPilot ビルド
-
-フライトコントローラー (機体ファームウェア):
-
-```bash
+./scripts/apply_ap_patches.sh
 ./scripts/build_ap.sh AF-F4_nano copter
-./scripts/build_ap.sh AF-H7_nano copter
-./scripts/build_ap.sh AF-F7_mini copter
-./scripts/build_ap.sh AF-H7E copter
+# AP-RTK_* targets use AP_Periph, not copter.
 ```
 
-DroneCAN ペリフェラル (AP_Periph ファームウェア — ターゲットに `AP_Periph` を指定):
+優先順位はNOVAX_VERSION → boards/<board>/VERSION → ルートVERSION → devです。FC文字列はnovaX Copter v1.3.0のように機体種類を含み、AP_Periph出力名はボード別バージョンです。全製品共通バージョンではありません。[VERSIONING.md](VERSIONING.md)を参照してください。
+
+## 公開・更新の制限
+
+2026-09-06にAF-* 6種類とAP-RTK dual/G5Hの既存ボード別公開を確認しました。AD-ME1とX20Dのボード別公開は未確認です。VERSIONは出荷承認ではありません。
+
+release.shは既存アセットを上書きできます。承認・ビルド検証後の未公開ボード別タグを使用してください。DRY_RUNは公開しませんが署名対象には署名器・鍵が必要です。実公開はGit除外のGITHUB_ACCESS_TOKENを使用します。AF-F4_nano_v2署名を回避せず、ワークスペースのカタログ署名器またはAFF4T10_FWSIGを使います。
 
 ```bash
-./scripts/build_ap.sh AP-RTK_dual AP_Periph
+# Set BOARD and NEW_TAG only for the reviewed, built, unreleased product.
+DRY_RUN=1 ./scripts/release.sh "${NEW_TAG:?set unreleased board-scoped tag}" "${BOARD:?set board directory name}"
 ```
 
-ブートローダーは初回実行時に存在しなければ自動でビルドされます。ArduPilot のビルドには標準の ArduPilot Python パッケージ(`pymavlink`, `empy==3.3.4`, `intelhex` など)が必要で、結合 `*_with_bl.hex` の生成には **`intelhex`** モジュールが必須です。
+製品・機体種類に一致するファイルのみ使用します。AD-ME1/AF-F4_nano/AF-F4_T10_nanoはID 6203を共有しますがピン・機能互換の保証ではありません。v2は6204です。FC .apjはUSBブートローダー/シリアル更新、一致する_with_bl.hexはボード固有DFU/SWD復旧です。全ボードのボタンなしDFUを仮定しません。
 
-### Betaflight ビルド
+AP-RTK dualはDroneCAN更新とSWD復旧を使い、受信機USBはMCU DFUではありません。G5HはDroneCANまたはボード固有MCU USB/DFU/SWDです。X20Dは開発中で検証済み公開ではありません。[Web Updater](https://novax-alux.github.io/parts-catalog/update/)は表示されたFC向けで、全外設対応ではありません。
+
+## 文書回帰検査
 
 ```bash
-# ARM ツールチェーンのインストール (初回のみ、GCC 13.3.1 が必要)
-cd firmware/betaflight && make arm_sdk_install && cd ../..
-
-# ビルド
-./scripts/build_bf.sh AF-F4_nano
-./scripts/build_bf.sh AF-H7_nano
+python3 scripts/validate_docs.py
 ```
 
-### 出力
-
-ファームウェア成果物は `releases/<board>/` に収集されます:
-
-```bash
-ls releases/AF-F4_nano/ardupilot/
-# arducopter.apj  arducopter_with_bl.hex  AF-F4_nano_bl.bin  ...
-
-ls releases/AP-RTK_dual/ardupilot/
-# AP_Periph.bin  AP_Periph.apj  AP_Periph_with_bl.hex  AP-RTK_dual_bl.bin  ...
-```
-
-## ファームウェアバージョン
-
-すべてのフライトコントローラーは**単一の** novaX バージョンを共有し、リポジトリ直下の `VERSION` ファイル（例: `0.2.0`）で定義します。ビルド時に `build_ap.sh` がこれをファームウェアへ埋め込むため、Mission Planner / QGC では次のように表示されます:
-
-```
-novaX v0.2.0 (92b0cd78)
-```
-
-上流の ArduPilot バージョンは別途 `fw_string_original` に保持され、git ハッシュは末尾に自動付加されます。DroneCAN ペリフェラル（AP_Periph）は独自のバージョン系統で、共有 FC バージョンは付与されません。
-
-## リリース公開
-
-リリースはファームウェアを**個別ファイル**として公開します（zip なし）。ボードごとに 1 セットを単一タグの下に配置します。
-
-```bash
-# 1. 共有バージョンを更新
-echo 0.2.0 > VERSION
-
-# 2. 各フライトコントローラーをビルド（バージョンは自動で埋め込まれます）
-./scripts/build_ap.sh AF-F4_nano copter
-./scripts/build_ap.sh AF-F7_mini copter
-./scripts/build_ap.sh AF-H7_nano copter
-./scripts/build_ap.sh AF-H7E    copter
-
-# 3. 公開。タグは VERSION と一致する必要があります（vX.Y.Z）。ペリフェラルは除外されます
-./scripts/release.sh v0.2.0
-```
-
-リポジトリ直下に `GITHUB_ACCESS_TOKEN=<token>` を含む `.env` が必要です（gitignored）。`DRY_RUN=1 ./scripts/release.sh v0.2.0` で公開せずにプレビューできます。
-
-## 書き込み
-
-フライトコントローラー:
-
-| 方法 | ファイル | タイミング |
-|------|----------|------------|
-| STLink / DFU | `*_with_bl.hex` | 初回書き込み (ブートローダー含む) |
-| Mission Planner | `.apj` | ArduPilot OTA 更新 |
-| BF Configurator | `.hex` | Betaflight 更新 |
-
-DroneCAN ペリフェラル (例: AP-RTK dual — USB DFU なし):
-
-| 方法 | ファイル | タイミング |
-|------|----------|------------|
-| STLink / SWD | `AP_Periph_with_bl.hex` | 初回書き込み (ブートローダー + アプリ、`0x08000000`) |
-| Mission Planner → DroneCAN | `AP_Periph.bin` | CAN 経由のファームウェア更新 |
-
-## 仕組み
-
-ボード定義はファームウェアソースから分離されて `boards/` に置かれます。`sync_ap_board.sh` スクリプトが ArduPilot ソースツリーへの相対シンボリックリンクを作成し、ビルドシステムが認識できるようにします。
-
-ファームウェアソースの更新はボード設定とは独立です:
-
-```bash
-cd firmware/ardupilot && git pull
-```
-
-## ライセンス
-
-ハードウェア設計ファイルは novaX-ALUX 専有です。
-ファームウェア定義は各アップストリームのライセンス (GPLv3) に従います。
+Hardware design files are proprietary to novaX-ALUX. Firmware definitions follow their respective upstream licenses (GPLv3).

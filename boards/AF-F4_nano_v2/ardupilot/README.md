@@ -8,10 +8,10 @@ Key hardware mapping:
 - Board ID: `6204` (its own id — the AF-F4 nano family's `6203` firmware is not compatible)
 - IMU: `ICM-42688-P` on `SPI1`, CS `PC2`
 - Barometer: `DPS368` on `I2C1` at `0x76`
-- GPS: `MAX-M10S` on `USART1`
+- GPS: external module carrying `MAX-M10S`, connected to `USART1` (not onboard)
 - Compass: `QMC5883P` on `I2C1` (external, on the GPS module)
 - SD card: `SPI3`, CS `PC1`
-- Motors: 6 outputs (`PC6`, `PC7`, `PC8`, `PC9`, `PA15`, `PA8`)
+- Current firmware: 5 configured motor outputs (`PC6`, `PC7`, `PC8`, `PC9`, `PA15`). `PA8` is not assigned a PWM output in the current definition or the v1.0.11 release tag; do not advertise six working firmware outputs.
 - Status LEDs: blue `PB9`, green `PA14`
 - USB detect: `PB12` (VBUS)
 - No onboard OSD chip

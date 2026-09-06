@@ -21,6 +21,7 @@ i2c:
     - DPS368
     - QMC5883P
 outputs:
-  motors: 6
+  motors: 5
+  note: Current hwdef configures M1-M5 only; PA8 is not assigned a PWM output.
 storage:
   sdcard: SPI3

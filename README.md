@@ -1,175 +1,89 @@
-# novaX Flight Controller
+# novaX FC
 
-[한국어](README_ko.md) | [中文](README_zh.md) | [日本語](README_ja.md)
+[한국어](README_ko.md) | [日本語](README_ja.md)
 
-Board definitions, build scripts, and firmware releases for novaX flight controllers and DroneCAN peripherals.
+Canonical source: [novaX-ALUX/fc](https://github.com/novaX-ALUX/fc). The current tree contains FC configurations, the AD-ME1 rebrand variant, and three GNSS configurations awaiting extraction. **GNSS peripherals are not FCs; the GNSS/shared-source split is not complete.**
 
-## Supported Boards
+## Current board configurations
 
-| Board | MCU | IMU | Baro | Compass | GPS | Firmware |
-|-------|-----|-----|------|---------|-----|----------|
-| AF-F4 nano | STM32F405 | ICM-42688-P | SPL06 | QMC5883P (ext) | MAX-M10S | ArduPilot / Betaflight |
-| AF-H7 nano | STM32H743 | Dual ICM-42688-P | DPS310 | IST8310 (int) | - | ArduPilot / Betaflight |
-| AF-F7 mini&nbsp;‡ | STM32F765 | ICM-20689 + ICM-20602 + BMI055 | MS5611 | IST8310 (int) | - | ArduPilot |
-| AF-H7E&nbsp;‡ | STM32H753 | ICM-42688-P + BMI088 + ICM-20649 | 2× ICP-20100 | RM3100 | - | ArduPilot |
-| AP-RTK dual&nbsp;† | STM32F412 | - | - | RM3100 | Dual-antenna RTK (moving baseline) | ArduPilot AP_Periph |
+Derived from actual hardware definitions, bootloader IDs, board VERSION files and configuration paths. **A configuration is not proof of hardware qualification or a published release.** Build MCU target means the software backend: AF-F7 mini declares STM32F765IIK6 with an STM32F767xx backend; AF-H7E declares STM32H753IIK6 with an STM32H743xx backend. Do not interpret backend names as replacement-part specifications.
 
-† **DroneCAN peripheral** (GPS + compass node), not a flight controller. Based on the CUAV C-RTK2-HP; board ID `1085` (kept same as CUAV so it can be updated over DroneCAN).
+<!-- board-inventory:start -->
+| Board directory | Scope | Build MCU target | Board ID | Source version | Configuration present |
+|---|---|---|---|---|---|
+| [AD-ME1](boards/AD-ME1/ardupilot/) | Rebrand variant | `STM32F405xx` | 6203 | 0.1.0 | ArduPilot |
+| [AF-F4_nano](boards/AF-F4_nano/ardupilot/) | FC | `STM32F405xx` | 6203 | 1.2.3 | ArduPilot + Betaflight config |
+| [AF-F4_nano_v2](boards/AF-F4_nano_v2/ardupilot/) | FC | `STM32F405xx` | 6204 | 1.0.11 | ArduPilot |
+| [AF-F4_T10_nano](boards/AF-F4_T10_nano/ardupilot/) | FC | `STM32F405xx` | 6203 | 1.3.4 | ArduPilot |
+| [AF-F7_mini](boards/AF-F7_mini/ardupilot/) | FC | `STM32F767xx` | 6201 | 1.3.0 | ArduPilot |
+| [AF-H7_nano](boards/AF-H7_nano/ardupilot/) | FC | `STM32H743xx` | 6200 | 1.2.3 | ArduPilot + Betaflight config |
+| [AF-H7E](boards/AF-H7E/ardupilot/) | FC | `STM32H743xx` | 6202 | 1.3.0 | ArduPilot |
+| [AP-RTK_dual](boards/AP-RTK_dual/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 1085 | 0.1.0 | AP_Periph |
+| [AP-RTK_G5H](boards/AP-RTK_G5H/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 6206 | 0.1.0 | AP_Periph |
+| [AP-RTK_X20D](boards/AP-RTK_X20D/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 6205 | 0.1.0 | AP_Periph |
+<!-- board-inventory:end -->
 
-‡ **Autopilot-class** boards with redundant IMUs. AF-F7 mini drives its PWM outputs directly (no IO co-processor); AF-H7E is a modular design with an STM32F103 IO co-processor and Ethernet.
+## Actual repository structure
 
-All flight controllers use novaX-ALUX board IDs in the reserved `6200`–`6209` range: AF-H7 nano `6200`, AF-F7 mini `6201`, AF-H7E `6202`, AF-F4 nano `6203` (AF-F4 nano now has a distinct novaX ID instead of the SpeedyBee F4 ID). The AP-RTK dual peripheral keeps CUAV ID `1085` for DroneCAN OTA compatibility.
+This is the current tree, not the proposed future layout. Local product hardware/docs directories may be untracked and are not guaranteed to be present in a new public clone. GitHub Releases is a remote service, not a source directory.
 
-## Repository Structure
-
-```
-├── firmware/
-│   ├── ardupilot/              # ArduPilot source (git submodule)
-│   └── betaflight/             # Betaflight source (git submodule)
-├── boards/
-│   ├── AF-F4_nano/             # Flight controller
-│   │   ├── ardupilot/          # hwdef.dat, hwdef-bl.dat, defaults.parm
-│   │   ├── betaflight/         # config.h
-│   │   └── docs/               # Schematic
-│   ├── AF-H7_nano/             # Flight controller
-│   │   ├── ardupilot/          # hwdef.dat, hwdef-bl.dat, defaults.parm
-│   │   ├── betaflight/         # config.h
-│   │   └── docs/               # Schematic
-│   ├── AF-F7_mini/             # Flight controller (no IOMCU)
-│   │   ├── ardupilot/          # hwdef.dat, hwdef-bl.dat, defaults.parm
-│   │   └── docs/               # Schematic + netlist
-│   ├── AF-H7E/                 # Flight controller (modular, Ethernet)
-│   │   ├── ardupilot/          # hwdef.dat, hwdef-bl.dat, defaults.parm
-│   │   └── docs/               # Schematics + netlists
-│   └── AP-RTK_dual/            # DroneCAN AP_Periph peripheral (GPS + compass)
-│       ├── ardupilot/          # hwdef.dat, hwdef-bl.dat
-│       └── metadata.yaml
-├── scripts/
-│   ├── sync_ap_board.sh        # Symlink board config into AP source tree
-│   ├── build_ap.sh             # Configure + build + package (ArduPilot)
-│   ├── build_bf.sh             # Build + package (Betaflight)
-│   ├── package_fw.sh           # Collect firmware artifacts into releases/
-│   └── release.sh              # Publish a GitHub Release (individual files)
-├── VERSION                     # Shared novaX firmware version (all FCs)
-├── releases/                   # Local build output (gitignored)
-│   └── <board>/
-│       ├── ardupilot/          # .apj, .hex, bootloader
-│       └── betaflight/         # .hex, .bin
-└── GitHub Releases             # Published firmware (individual files per board)
+```text
+fc/
+├─ boards/
+│  ├─ AD-ME1/
+│  ├─ AF-F4_nano/
+│  ├─ AF-F4_nano_v2/
+│  ├─ AF-F4_T10_nano/
+│  ├─ AF-F7_mini/
+│  ├─ AF-H7_nano/
+│  ├─ AF-H7E/
+│  ├─ AP-RTK_dual/
+│  ├─ AP-RTK_G5H/
+│  └─ AP-RTK_X20D/
+├─ firmware/
+│  ├─ ardupilot/     # pinned Git submodule
+│  └─ betaflight/    # pinned Git submodule
+├─ patches/ardupilot/
+├─ scripts/          # sync, build, package, release, validation
+├─ VERSION           # fallback; boards/<board>/VERSION takes priority
+├─ VERSIONING.md
+├─ build/            # generated, ignored
+└─ releases/         # generated, ignored
 ```
 
-## Getting Started
+## Build and independent versions
 
-### Clone
+Use Linux/WSL with the dependencies required by the pinned upstream sources. Apply reviewed novaX patches before building and resolve any warning before release. Do not update or overwrite a dirty existing submodule. Betaflight configs exist only for AF-F4_nano and AF-H7_nano; this does not certify a new successful build.
 
 ```bash
 git clone --recurse-submodules --shallow-submodules https://github.com/novaX-ALUX/fc.git
 cd fc
-```
-
-### Build ArduPilot
-
-Flight controllers (vehicle firmware):
-
-```bash
+./scripts/apply_ap_patches.sh
 ./scripts/build_ap.sh AF-F4_nano copter
-./scripts/build_ap.sh AF-H7_nano copter
-./scripts/build_ap.sh AF-F7_mini copter
-./scripts/build_ap.sh AF-H7E copter
+# AP-RTK_* targets use AP_Periph, not copter.
 ```
 
-DroneCAN peripheral (AP_Periph firmware — pass `AP_Periph` as the target):
+Version priority: `NOVAX_VERSION` → `boards/<board>/VERSION` → root `VERSION` → `dev`. FC strings include the vehicle, e.g. `novaX Copter v1.3.0`; AP_Periph output filenames carry the board version. Products do **not** share one common version. See [VERSIONING.md](VERSIONING.md).
+
+## Release and update limits
+
+The 2026-09-06 release inventory verified existing board-scoped releases for six AF-* boards, AP-RTK dual and AP-RTK G5H. No board-scoped release was verified for AD-ME1 or AP-RTK X20D. A VERSION file is not shipment approval.
+
+`release.sh` may replace existing release assets. Use an unreleased board-scoped tag only after approval and build verification. DRY_RUN does not publish, but signed boards still require a local signer/key. Actual publishing requires the Git-ignored GITHUB_ACCESS_TOKEN. AF-F4_nano_v2 signatures must not be bypassed; use the workspace catalog signer or an explicit AFF4T10_FWSIG path.
 
 ```bash
-./scripts/build_ap.sh AP-RTK_dual AP_Periph
+# Set BOARD and NEW_TAG only for the reviewed, built, unreleased product.
+DRY_RUN=1 ./scripts/release.sh "${NEW_TAG:?set unreleased board-scoped tag}" "${BOARD:?set board directory name}"
 ```
 
-The bootloader is built automatically on first run if not present. ArduPilot builds need the standard ArduPilot Python packages (`pymavlink`, `empy==3.3.4`, `intelhex`, …); the **`intelhex`** module is required for the combined `*_with_bl.hex` to be generated.
+Use matching product/vehicle files. AD-ME1, AF-F4_nano and AF-F4_T10_nano share board ID 6203, so ID matching alone does not prove feature/pin compatibility. AF-F4_nano_v2 uses 6204. FC .apj files use the USB bootloader/serial updater; matching _with_bl.hex files use board-specific DFU/SWD recovery. Do not assume buttonless DFU on every board.
 
-### Build Betaflight
+AP-RTK dual: DroneCAN updates and SWD MCU recovery; receiver USB is not MCU DFU. AP-RTK G5H: DroneCAN, or board-specific MCU USB bootloader/DFU/SWD. AP-RTK X20D: development target, not a verified public release. The catalog [Web Updater](https://novax-alux.github.io/parts-catalog/update/) covers the listed FC files, not all peripherals.
+
+## Documentation check
 
 ```bash
-# Install ARM toolchain (one-time, requires GCC 13.3.1)
-cd firmware/betaflight && make arm_sdk_install && cd ../..
-
-# Build
-./scripts/build_bf.sh AF-F4_nano
-./scripts/build_bf.sh AF-H7_nano
+python3 scripts/validate_docs.py
 ```
 
-### Output
-
-Firmware artifacts are collected in `releases/<board>/`:
-
-```bash
-ls releases/AF-F4_nano/ardupilot/
-# arducopter.apj  arducopter_with_bl.hex  AF-F4_nano_bl.bin  ...
-
-ls releases/AP-RTK_dual/ardupilot/
-# AP-RTK_dual-v0.1.0.bin  AP-RTK_dual-v0.1.0.apj  AP-RTK_dual-v0.1.0_with_bl.hex  AP-RTK_dual_bl.bin  ...
-# (AP_Periph boards are named <board>-v<VERSION> at packaging time -- the waf
-#  target is the same AP_Periph for every peripheral, so the bare name would not
-#  say which product the file belongs to)
-```
-
-## Firmware Versioning
-
-All flight controllers share **one** novaX version, defined in the repo-root `VERSION` file (e.g. `0.2.0`). At build time `build_ap.sh` injects it into the firmware, so Mission Planner / QGC report:
-
-```
-novaX v0.2.0 (92b0cd78)
-```
-
-The upstream ArduPilot version is preserved separately (`fw_string_original`), and the git hash is appended automatically. DroneCAN peripherals (AP_Periph) are on their own version track and are not stamped with the shared FC version.
-
-## Publishing a Release
-
-Releases publish the firmware as **individual files** (no zip) — one set per board, under a single tag.
-
-```bash
-# 1. Bump the shared version
-echo 0.2.0 > VERSION
-
-# 2. Build every flight controller (the version is injected automatically)
-./scripts/build_ap.sh AF-F4_nano copter
-./scripts/build_ap.sh AF-F7_mini copter
-./scripts/build_ap.sh AF-H7_nano copter
-./scripts/build_ap.sh AF-H7E    copter
-
-# 3. Publish. The tag must match VERSION (vX.Y.Z); peripherals are excluded.
-./scripts/release.sh v0.2.0
-```
-
-Requires a `.env` at the repo root with `GITHUB_ACCESS_TOKEN=<token>` (gitignored). Preview without publishing using `DRY_RUN=1 ./scripts/release.sh v0.2.0`.
-
-## Flashing
-
-Flight controllers:
-
-| Method | File | When |
-|--------|------|------|
-| STLink / DFU | `*_with_bl.hex` | First flash (includes bootloader) |
-| Mission Planner | `.apj` | ArduPilot OTA update |
-| BF Configurator | `.hex` | Betaflight update |
-
-DroneCAN peripherals (e.g. AP-RTK dual — no USB DFU):
-
-| Method | File | When |
-|--------|------|------|
-| STLink / SWD | `<board>-v<ver>_with_bl.hex` | First flash (bootloader + app, at `0x08000000`) |
-| Mission Planner → DroneCAN | `<board>-v<ver>.bin` / `.apj` | Firmware update over CAN (the bootloader refuses a file whose `board_id` does not match) |
-
-## How It Works
-
-Board definitions live in `boards/`, separate from firmware source. The `sync_ap_board.sh` script creates relative symlinks into the ArduPilot source tree so the build system can find them.
-
-Updating firmware source is independent of board configs:
-
-```bash
-cd firmware/ardupilot && git pull
-```
-
-## License
-
-Hardware design files are proprietary to novaX-ALUX.
-Firmware definitions follow their respective upstream licenses (GPLv3).
+Hardware design files are proprietary to novaX-ALUX. Firmware definitions follow their respective upstream licenses (GPLv3).

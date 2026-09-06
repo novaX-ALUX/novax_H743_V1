@@ -12,7 +12,7 @@ CADDX-gimbal variant of [AF-F4_nano](../../AF-F4_nano/ardupilot/README.md).
 ## Using the gimbal
 
 1. `MNT1_TYPE = 13` (CADDX)
-2. Wire the gimbal to a spare UART (e.g. SERIAL6) and set that port's `SERIALx_PROTOCOL` to the mount protocol.
+2. Wire the gimbal to a suitable spare UART (e.g. SERIAL6) and set that port's `SERIALx_PROTOCOL = 8` (Gimbal). This is the protocol selected by `AP_Mount_Backend_Serial`, which the CADDX backend inherits. Confirm baud rate and wiring for the actual gimbal before use.
 
 ## Build
 

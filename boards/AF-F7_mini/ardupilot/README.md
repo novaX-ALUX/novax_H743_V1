@@ -10,7 +10,7 @@ Key hardware mapping:
 - Barometer: `MS5611` on `SPI4`
 - Compass: `IST8310` on `I2C` (internal) + external probe
 - FRAM: on `SPI2` (parameter storage)
-- CAN: `FDCAN1` + `FDCAN2`
+- CAN: `CAN1` + `CAN2` as defined by this STM32F7 target
 - SD Card: `SDMMC1` 4-bit
 - RC input: dedicated RCIN pin `PI5` (all protocols)
 - Motor Outputs: 11 (8x FMU_CH + 3x on TIM2)

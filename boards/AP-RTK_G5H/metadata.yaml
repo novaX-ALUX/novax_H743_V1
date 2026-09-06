@@ -16,5 +16,5 @@ sensors:
 can:
   can1: DroneCAN node
 function: RTK GNSS + dual-antenna heading + compass DroneCAN peripheral
-hardware: 41_Kicad/circuits/ap_rtk_g5h.py (SKiDL) -> 41_Kicad/kicad/ap_rtk_g5h/
-status: design — schematic drafted, PCB not started. Heading path verified in ArduPilot 4.6.3 source (see README).
+hardware: Workspace-local ../hardware/AP-RTK_G5H/ (outside this public source clone)
+status: Existing v0.1.0 firmware release; schematic and PCB work exist in the workspace. Production/flight qualification is not established by source or release presence.
