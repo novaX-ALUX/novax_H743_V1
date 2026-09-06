@@ -16,3 +16,4 @@ jobs:
       - uses: actions/checkout@v4
       - run: python3 scripts/validate_docs.py
       - run: python3 scripts/test_validate_docs.py
+      - run: python3 scripts/test_build_bf.py

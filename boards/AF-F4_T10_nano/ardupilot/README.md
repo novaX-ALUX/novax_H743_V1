@@ -1,9 +1,9 @@
 # AF-F4_T10_nano (ArduPilot)
 
-CADDX-gimbal variant of [AF-F4_nano](../../AF-F4_nano/ardupilot/README.md).
+CADDX-gimbal configuration variant of [AF-F4_nano](../../AF-F4_nano/ardupilot/hwdef.dat).
 
-- **Hardware:** identical to AF-F4_nano (SpeedyBee F405 V4 base, STM32F405, SPL06 baro, MAX-M10S GPS, QMC5883P compass).
-- **Board ID:** `6203` — same as AF-F4_nano, so an existing AF-F4_nano board accepts this firmware over the normal `.apj` updater (no DFU required).
+- **Configuration:** STM32F405 and SPL06 barometer; MAX-M10S GNSS and QMC5883P compass are external peripherals, not onboard components.
+- **Board ID:** `6203`, shared with AF-F4_nano and AD-ME1. An ID match alone does not prove pin/feature compatibility; use only the reviewed product-specific image.
 - **Feature set:** mirrors the custom.ardupilot.org *Selected Features* used for the speedybeef4v4 build, applied via [`AF-F4_T10_features.inc`](AF-F4_T10_features.inc), **plus the CADDX gimbal mount**:
   - `HAL_MOUNT_ENABLED 1` (Camera Mounts)
   - `HAL_MOUNT_CADDX_ENABLED 1` (CADDX gimbal, `MNT_TYPE = 13`)
@@ -17,8 +17,9 @@ CADDX-gimbal variant of [AF-F4_nano](../../AF-F4_nano/ardupilot/README.md).
 ## Build
 
 ```
-export PATH="$HOME/arm-gcc/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH"   # official gcc 10.2 required
-./scripts/build_ap.sh AF-F4_T10_nano copter
+# Run from the FC repository root; ArduPilot uses GCC 10.2.1.
+bash ../_shared/ardupilot/Tools/novax/install_toolchain.sh
+bash scripts/build_ap.sh AF-F4_T10_nano copter
 ```
 
 `AF-F4_T10_features.inc` is auto-generated from `build.log` (custom-build Selected Features) + the CADDX gimbal.

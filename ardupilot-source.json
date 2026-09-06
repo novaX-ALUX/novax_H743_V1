@@ -1,8 +1,8 @@
 {
   "repository": "https://github.com/novaX-ALUX/ardupilot.git",
   "branch": "novax-workspace",
-  "commit": "ab2bba2845aaac8e27fd06b223be4cf3ecf66dab",
+  "commit": "bd40652a37774653d6d3e6f9a18cc603ead4249f",
   "upstreamCommit": "92b0cd788ec29406f26c6f9c31d5ceedbd1cc538",
   "path": "../_shared/ardupilot",
-  "note": "Existing local firmware patches are preserved uncommitted; they are not part of this lock or release approval."
+  "note": "Pins shared source, patch recipes and GCC 10.2.1 selection. Applying recipes creates local source changes; this is not firmware release or hardware approval."
 }

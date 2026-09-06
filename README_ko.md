@@ -54,6 +54,7 @@ git clone --recurse-submodules --shallow-submodules https://github.com/novaX-ALU
 git clone --branch novax-workspace https://github.com/novaX-ALUX/ardupilot.git _shared/ardupilot
 # Select the exact ardupilot-source.json commit before initializing submodules.
 git -C _shared/ardupilot submodule update --init --recursive
+bash _shared/ardupilot/Tools/novax/install_toolchain.sh # ArduPilot GCC 10.2.1
 cd fc
 bash scripts/apply_ap_patches.sh
 bash scripts/build_ap.sh AF-F4_nano copter
