@@ -33,6 +33,12 @@ class DocumentationGateTest(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             validate_docs.check()
 
+    def test_inventory_order_is_platform_independent(self):
+        names = [row["board"] for row in validate_docs.inventory()]
+        self.assertEqual(names, sorted(names, key=str.casefold))
+        self.assertLess(names.index("AF-F4_nano"), names.index("AF-F4_T10_nano"))
+        self.assertLess(names.index("AF-H7_nano"), names.index("AF-H7E"))
+
     def test_version_drift_fails(self):
         (self.root / "boards/AF-F4_nano/VERSION").write_text("99.0.0\n", encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "Stale/incomplete"):
