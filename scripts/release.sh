@@ -52,9 +52,10 @@ fi
 
 cd "${ROOT_DIR}"
 TAG="${TAG}" BOARDS="${*}" DRY_RUN="${DRY_RUN:-}" python3 - <<'PYEOF'
-import json, os, shutil, subprocess, sys, tempfile, urllib.request, urllib.error
+import atexit, json, os, shutil, subprocess, sys, tempfile, urllib.request, urllib.error
+from pathlib import Path
 
-REPO   = 'novaX-ALUX/fc-boards'
+REPO   = 'novaX-ALUX/fc'
 TAG    = os.environ['TAG']
 BOARDS = os.environ.get('BOARDS', '').split()
 DRY    = bool(os.environ.get('DRY_RUN'))
@@ -75,20 +76,30 @@ PURPOSE = {
 # therefore fail-closed here rather than best-effort.
 # Scope is deliberate: only AF-F4_nano_v2 is signed today.
 SIGNED_BOARDS = {'AF-F4_nano_v2'}
-# The signer + private key live in the sibling parts-catalog checkout (the key is
-# gitignored there and never travels with this repo). Override with AFF4T10_FWSIG.
-FWSIG = os.environ.get('AFF4T10_FWSIG') or os.path.normpath(
-    os.path.join('..', 'parts-catalog', 'tools', 'af_f4_t10_fwsig.py'))
+# The signer/key stay in the web checkout, not in a product firmware repository.
+# Find the workspace by its canonical web path so moving this repo does not
+# require an old-path junction. A standalone clone uses AFF4T10_FWSIG explicitly.
+def find_signer(repo_root, override=None):
+    if override:
+        return override
+    for parent in repo_root.parents:
+        candidate = parent / 'web' / 'parts-catalog' / 'tools' / 'af_f4_t10_fwsig.py'
+        if candidate.is_file():
+            return str(candidate)
+    return None
+
+FWSIG = find_signer(Path.cwd(), os.environ.get('AFF4T10_FWSIG'))
 _sigtmp = None
 
 def sign_asset(aname, src):
     """Sign src, return (manifest_asset_name, manifest_path). Exits on failure."""
     global _sigtmp
-    if not os.path.isfile(FWSIG):
-        sys.exit('signing required for this board but the signer is missing: ' + FWSIG
+    if not FWSIG or not os.path.isfile(FWSIG):
+        sys.exit('signing required for this board but the signer is missing: ' + str(FWSIG)
                  + chr(10) + '       set AFF4T10_FWSIG=/path/to/af_f4_t10_fwsig.py')
     if _sigtmp is None:
         _sigtmp = tempfile.mkdtemp(prefix='novax-fwsig-')
+        atexit.register(shutil.rmtree, _sigtmp)
     # copy under the RELEASE asset name so the manifest 'file' field is the
     # name people actually download (verify_file does not check it, but the
     # manifest is also read by humans as release back-data)

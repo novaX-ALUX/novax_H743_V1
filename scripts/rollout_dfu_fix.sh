@@ -5,7 +5,7 @@
 # version is read from boards/<board>/VERSION by build_ap.sh (per-board, so
 # bumping one board never bumps the others).
 set -uo pipefail
-ROOT=/home/sk24/39_gitNovaX/repos/flight_controller
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PATH="$HOME/arm-gcc/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH"
 cd "$ROOT"
 
