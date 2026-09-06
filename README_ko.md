@@ -2,7 +2,7 @@
 
 [English](README.md) | [日本語](README_ja.md)
 
-개발 정본은 [novaX-ALUX/fc](https://github.com/novaX-ALUX/fc)다. 현재 FC 설정, AD-ME1 리브랜딩 변형, 분리 대기 중인 GNSS 설정 3종이 들어 있다. **GNSS 주변장치는 FC가 아니며 GNSS·공유 소스 분리는 아직 미완료다.**
+개발 정본은 [novaX-ALUX/fc](https://github.com/novaX-ALUX/fc)다. FC·리브랜딩 설정 7종을 관리한다. GNSS 제품 소스는 별도 비공개 저장소 [novaX-ALUX/gnss](https://github.com/novaX-ALUX/gnss)에 있다. ArduPilot도 공용 독립 저장소로 분리했으며 FC 서브모듈이 아니다.
 
 ## 현재 보드 설정 전체 목록
 
@@ -18,9 +18,6 @@
 | [AF-F7_mini](boards/AF-F7_mini/ardupilot/) | FC | `STM32F767xx` | 6201 | 1.3.0 | ArduPilot |
 | [AF-H7_nano](boards/AF-H7_nano/ardupilot/) | FC | `STM32H743xx` | 6200 | 1.2.3 | ArduPilot + Betaflight config |
 | [AF-H7E](boards/AF-H7E/ardupilot/) | FC | `STM32H743xx` | 6202 | 1.3.0 | ArduPilot |
-| [AP-RTK_dual](boards/AP-RTK_dual/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 1085 | 0.1.0 | AP_Periph |
-| [AP-RTK_G5H](boards/AP-RTK_G5H/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 6206 | 0.1.0 | AP_Periph |
-| [AP-RTK_X20D](boards/AP-RTK_X20D/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 6205 | 0.1.0 | AP_Periph |
 <!-- board-inventory:end -->
 
 ## 실제 저장소 구조
@@ -36,12 +33,8 @@ fc/
 │  ├─ AF-F4_T10_nano/
 │  ├─ AF-F7_mini/
 │  ├─ AF-H7_nano/
-│  ├─ AF-H7E/
-│  ├─ AP-RTK_dual/
-│  ├─ AP-RTK_G5H/
-│  └─ AP-RTK_X20D/
+│  └─ AF-H7E/
 ├─ firmware/
-│  ├─ ardupilot/     # pinned Git submodule
 │  └─ betaflight/    # pinned Git submodule
 ├─ patches/ardupilot/
 ├─ scripts/          # sync, build, package, release, validation
@@ -57,10 +50,14 @@ fc/
 
 ```bash
 git clone --recurse-submodules --shallow-submodules https://github.com/novaX-ALUX/fc.git
+# New, empty shared destination only; never overwrite an existing checkout.
+git clone --branch novax-workspace https://github.com/novaX-ALUX/ardupilot.git _shared/ardupilot
+# Select the exact ardupilot-source.json commit before initializing submodules.
+git -C _shared/ardupilot submodule update --init --recursive
 cd fc
-./scripts/apply_ap_patches.sh
-./scripts/build_ap.sh AF-F4_nano copter
-# AP-RTK_* targets use AP_Periph, not copter.
+bash scripts/apply_ap_patches.sh
+bash scripts/build_ap.sh AF-F4_nano copter
+# GNSS builds run from the separate gnss repository.
 ```
 
 버전 우선순위는 `NOVAX_VERSION` → `boards/<board>/VERSION` → 루트 `VERSION` → `dev`다. FC 표시에는 `novaX Copter v1.3.0`처럼 기체 종류가 포함되고 AP_Periph 파일명은 보드별 버전을 쓴다. 전 제품이 단일 공통 버전을 쓰는 것이 아니다. [VERSIONING.md](VERSIONING.md)를 따른다.

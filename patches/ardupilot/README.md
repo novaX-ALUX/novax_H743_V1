@@ -1,8 +1,10 @@
 # novaX ArduPilot patches
 
-The `firmware/ardupilot` submodule is pinned to **upstream** ArduPilot, so core-source fixes
-that are not expressible as hwdef overlays are kept here as patches and re-applied after a
-fresh checkout / `git submodule update` via `scripts/apply_ap_patches.sh`.
+ArduPilot is the separate shared checkout `../_shared/ardupilot`, pinned by
+`ardupilot-source.json`. Patch files and their idempotent application now have one
+canonical location: ArduPilot `Tools/novax/patches/`. Run
+`bash scripts/apply_ap_patches.sh` explicitly before building a fresh source.
+Conflicts stop the command without resetting existing work.
 
 ## Patches
 - **0001-novax-software-dfu-board.patch** — buttonless software DFU (MAVLink

@@ -4,7 +4,7 @@ platform:
 mcu: STM32H753IIK6
 package: UFBGA-201
 bootloader_board_id: 6202
-source_tree: firmware/ardupilot
+source_tree: ../_shared/ardupilot
 board_config: boards/AF-H7E/ardupilot
 modules:
   fmu: V6X-FM (STM32H753 + FM25V05 FRAM + SE050 secure element)

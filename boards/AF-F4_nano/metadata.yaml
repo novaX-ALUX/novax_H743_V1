@@ -4,7 +4,7 @@ platform:
   - betaflight
 mcu: STM32F405xx
 bootloader_board_id: 6203
-source_tree: firmware/ardupilot
+source_tree: ../_shared/ardupilot
 board_config: boards/AF-F4_nano/ardupilot
 sensors:
   imu: Invensensev3

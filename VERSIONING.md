@@ -25,9 +25,6 @@
 | [AF-F7_mini](boards/AF-F7_mini/ardupilot/) | FC | `STM32F767xx` | 6201 | 1.3.0 | ArduPilot |
 | [AF-H7_nano](boards/AF-H7_nano/ardupilot/) | FC | `STM32H743xx` | 6200 | 1.2.3 | ArduPilot + Betaflight config |
 | [AF-H7E](boards/AF-H7E/ardupilot/) | FC | `STM32H743xx` | 6202 | 1.3.0 | ArduPilot |
-| [AP-RTK_dual](boards/AP-RTK_dual/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 1085 | 0.1.0 | AP_Periph |
-| [AP-RTK_G5H](boards/AP-RTK_G5H/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 6206 | 0.1.0 | AP_Periph |
-| [AP-RTK_X20D](boards/AP-RTK_X20D/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 6205 | 0.1.0 | AP_Periph |
 <!-- board-inventory:end -->
 
 ## 릴리스 태그와 산출물

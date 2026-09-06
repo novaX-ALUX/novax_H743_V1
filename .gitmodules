@@ -1,8 +1,3 @@
-[submodule "firmware/ardupilot"]
-	path = firmware/ardupilot
-	url = https://github.com/ArduPilot/ardupilot.git
-	shallow = true
-	ignore = dirty
 [submodule "firmware/betaflight"]
 	path = firmware/betaflight
 	url = https://github.com/betaflight/betaflight.git

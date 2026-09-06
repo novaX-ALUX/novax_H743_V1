@@ -44,6 +44,11 @@ class DocumentationGateTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Stale/incomplete"):
             validate_docs.check()
 
+    def test_gnss_returning_to_fc_fails(self):
+        (self.root / "boards/AP-RTK_Test").mkdir()
+        with self.assertRaisesRegex(ValueError, "GNSS product reappeared"):
+            validate_docs.check()
+
     def test_bootloader_id_mismatch_fails(self):
         target = self.root / "boards/AF-F4_nano/ardupilot/hwdef-bl.dat"
         target.write_text(target.read_text(encoding="utf-8").replace("APJ_BOARD_ID 6203", "APJ_BOARD_ID 9999"), encoding="utf-8")

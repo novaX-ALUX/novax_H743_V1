@@ -5,7 +5,7 @@ platform:
 mcu: STM32H743xx
 package: TFBGA-100
 bootloader_board_id: 6200
-source_tree: firmware/ardupilot
+source_tree: ../_shared/ardupilot
 board_config: boards/AF-H7_nano/ardupilot
 sensors:
   imu1: ICM-42688-P

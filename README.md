@@ -2,7 +2,7 @@
 
 [한국어](README_ko.md) | [日本語](README_ja.md)
 
-Canonical source: [novaX-ALUX/fc](https://github.com/novaX-ALUX/fc). The current tree contains FC configurations, the AD-ME1 rebrand variant, and three GNSS configurations awaiting extraction. **GNSS peripherals are not FCs; the GNSS/shared-source split is not complete.**
+Canonical source: [novaX-ALUX/fc](https://github.com/novaX-ALUX/fc). This repository contains seven FC/rebrand configurations. GNSS product sources are in [novaX-ALUX/gnss](https://github.com/novaX-ALUX/gnss) (private). ArduPilot is a separate shared repository, not an FC submodule.
 
 ## Current board configurations
 
@@ -18,9 +18,6 @@ Derived from actual hardware definitions, bootloader IDs, board VERSION files an
 | [AF-F7_mini](boards/AF-F7_mini/ardupilot/) | FC | `STM32F767xx` | 6201 | 1.3.0 | ArduPilot |
 | [AF-H7_nano](boards/AF-H7_nano/ardupilot/) | FC | `STM32H743xx` | 6200 | 1.2.3 | ArduPilot + Betaflight config |
 | [AF-H7E](boards/AF-H7E/ardupilot/) | FC | `STM32H743xx` | 6202 | 1.3.0 | ArduPilot |
-| [AP-RTK_dual](boards/AP-RTK_dual/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 1085 | 0.1.0 | AP_Periph |
-| [AP-RTK_G5H](boards/AP-RTK_G5H/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 6206 | 0.1.0 | AP_Periph |
-| [AP-RTK_X20D](boards/AP-RTK_X20D/ardupilot/) | GNSS (transitional) | `STM32F412Rx` | 6205 | 0.1.0 | AP_Periph |
 <!-- board-inventory:end -->
 
 ## Actual repository structure
@@ -36,12 +33,8 @@ fc/
 │  ├─ AF-F4_T10_nano/
 │  ├─ AF-F7_mini/
 │  ├─ AF-H7_nano/
-│  ├─ AF-H7E/
-│  ├─ AP-RTK_dual/
-│  ├─ AP-RTK_G5H/
-│  └─ AP-RTK_X20D/
+│  └─ AF-H7E/
 ├─ firmware/
-│  ├─ ardupilot/     # pinned Git submodule
 │  └─ betaflight/    # pinned Git submodule
 ├─ patches/ardupilot/
 ├─ scripts/          # sync, build, package, release, validation
@@ -57,10 +50,14 @@ Use Linux/WSL with the dependencies required by the pinned upstream sources. App
 
 ```bash
 git clone --recurse-submodules --shallow-submodules https://github.com/novaX-ALUX/fc.git
+# New, empty shared destination only; never overwrite an existing checkout.
+git clone --branch novax-workspace https://github.com/novaX-ALUX/ardupilot.git _shared/ardupilot
+# Select the exact ardupilot-source.json commit before initializing submodules.
+git -C _shared/ardupilot submodule update --init --recursive
 cd fc
-./scripts/apply_ap_patches.sh
-./scripts/build_ap.sh AF-F4_nano copter
-# AP-RTK_* targets use AP_Periph, not copter.
+bash scripts/apply_ap_patches.sh
+bash scripts/build_ap.sh AF-F4_nano copter
+# GNSS builds run from the separate gnss repository.
 ```
 
 Version priority: `NOVAX_VERSION` → `boards/<board>/VERSION` → root `VERSION` → `dev`. FC strings include the vehicle, e.g. `novaX Copter v1.3.0`; AP_Periph output filenames carry the board version. Products do **not** share one common version. See [VERSIONING.md](VERSIONING.md).

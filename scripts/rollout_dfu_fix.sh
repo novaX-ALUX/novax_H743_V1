@@ -8,14 +8,17 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PATH="$HOME/arm-gcc/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH"
 cd "$ROOT"
+source "${ROOT}/scripts/ap_env.sh"
 
 BOARDS=(AF-F4_nano AF-F7_mini AF-H7_nano AF-H7E AF-F4_T10_nano)
 FAIL=()
 for b in "${BOARDS[@]}"; do
   echo "==================== $b  (v$(cat "boards/$b/VERSION" 2>/dev/null || echo dev)) ===================="
   scripts/sync_ap_board.sh "$b" || { FAIL+=("$b:sync"); continue; }
-  rm -rf firmware/ardupilot/build/"$b"
-  ( cd firmware/ardupilot && python3 Tools/scripts/build_bootloaders.py "$b" ) || { FAIL+=("$b:bl"); continue; }
+  build_dir="$(realpath -m "${NOVAX_AP_ROOT}/build/${b}")"
+  [[ "$build_dir" == "$(realpath "${NOVAX_AP_ROOT}")/build/${b}" ]] || exit 1
+  rm -rf -- "$build_dir"
+  ( cd "${NOVAX_AP_ROOT}" && python3 Tools/scripts/build_bootloaders.py "$b" ) || { FAIL+=("$b:bl"); continue; }
   scripts/build_ap.sh "$b" copter || { FAIL+=("$b:app"); continue; }  # version from boards/$b/VERSION
   echo "---- $b done ----"
 done

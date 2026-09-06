@@ -3,7 +3,7 @@ platform:
   - ardupilot
 mcu: STM32F405xx
 bootloader_board_id: 6203
-source_tree: firmware/ardupilot
+source_tree: ../_shared/ardupilot
 board_config: boards/AD-ME1/ardupilot
 notes: >-
   AD-ME1 is a rebrand of the AF-F4_T10_nano build (CADDX gimbal variant of the

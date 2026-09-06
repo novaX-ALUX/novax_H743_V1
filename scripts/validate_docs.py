@@ -19,6 +19,8 @@ def inventory():
     # Path ordering differs between WindowsPath (case-insensitive) and
     # PosixPath (case-sensitive). Keep README ordering identical on both.
     for board in sorted((ROOT / "boards").iterdir(), key=lambda path: path.name.casefold()):
+        if board.name.startswith("AP-RTK_"):
+            raise ValueError("GNSS product reappeared in the FC repository")
         definition = board / "ardupilot/hwdef.dat"
         if not definition.is_file():
             continue
